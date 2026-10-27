@@ -1,14 +1,153 @@
-const loadForm=document.querySelector('#load-form'),urlInput=document.querySelector('#video-url'),welcome=document.querySelector('#welcome'),playerView=document.querySelector('#player-view'),statusText=document.querySelector('#status'),playButton=document.querySelector('#play-button'),pipButton=document.querySelector('#pip-button');let player,activeVideoId='',deferredInstall,pipWindow;
-function getVideoId(value){const text=value.trim(),src=text.match(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i),candidates=src?[src[1],text]:[text];for(const candidate of candidates){try{const url=new URL(candidate),host=url.hostname.toLowerCase().replace(/^www\./,'');if(host==='youtu.be')return url.pathname.split('/').filter(Boolean)[0]||'';if(host==='youtube.com'||host.endsWith('.youtube.com')){if(url.pathname==='/watch')return url.searchParams.get('v')||'';return url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/)?.[1]||''}}catch{}}return ''}
-function setMediaMetadata(){if(!('mediaSession'in navigator)||!player?.getVideoData)return;const data=player.getVideoData(),title=data.title||'YouTube',author=data.author||'YouTube';document.querySelector('#track-title').textContent=title;document.querySelector('#track-author').textContent=author;navigator.mediaSession.metadata=new MediaMetadata({title,artist:author,album:'YouTube',artwork:data.video_id?[{src:'https://i.ytimg.com/vi/'+data.video_id+'/default.jpg',sizes:'120x90',type:'image/jpeg'},{src:'https://i.ytimg.com/vi/'+data.video_id+'/hqdefault.jpg',sizes:'480x360',type:'image/jpeg'}]:[]})}
-function setPlaybackState(state){if('mediaSession'in navigator)navigator.mediaSession.playbackState=state;playButton.textContent=state==='playing'?'Ⅱ':'▶';playButton.setAttribute('aria-label',state==='playing'?'Tạm dừng':'Phát')}
-function setupMediaActions(){if(!('mediaSession'in navigator))return;const actions={play:()=>player?.playVideo(),pause:()=>player?.pauseVideo(),stop:()=>player?.pauseVideo(),seekbackward:()=>player?.seekTo(Math.max(0,player.getCurrentTime()-10),true),seekforward:()=>player?.seekTo(player.getCurrentTime()+10,true)};for(const[action,handler]of Object.entries(actions)){try{navigator.mediaSession.setActionHandler(action,handler)}catch{/* Browser does not support this action. */}}}
-async function openPictureInPicture(){if(!window.documentPictureInPicture){statusText.textContent='Cửa sổ nổi cần Chrome hoặc Edge phiên bản mới trên máy tính.';return}try{pipWindow=await window.documentPictureInPicture.requestWindow({width:480,height:270});const frame=document.querySelector('.video-frame');for(const sheet of document.querySelectorAll('link[rel="stylesheet"]')){const copy=pipWindow.document.createElement('link');copy.rel='stylesheet';copy.href=sheet.href;pipWindow.document.head.append(copy)}const pipStyles=pipWindow.document.createElement('style');pipStyles.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080808}.video-frame{width:100vw;height:100vh;min-width:0;min-height:0;aspect-ratio:auto;border-radius:0;box-shadow:none}.video-frame iframe{display:block;width:100%;height:100%;border:0}';pipWindow.document.head.append(pipStyles);pipWindow.document.title=document.querySelector('#track-title').textContent+' — Gọn';pipWindow.document.body.append(frame);pipWindow.addEventListener('pagehide',()=>{document.querySelector('#player-slot').append(frame);pipWindow=null})}catch{pipWindow=null;statusText.textContent='Không mở được cửa sổ nổi. Hãy dùng Chrome hoặc Edge trên máy tính.'}}
-if(!('documentPictureInPicture'in window)){pipButton.disabled=true;pipButton.title='Cửa sổ nổi cần Chrome hoặc Edge trên máy tính'}
+const loadForm=document.querySelector('#load-form');
+const urlInput=document.querySelector('#video-url');
+const welcome=document.querySelector('#welcome');
+const playerView=document.querySelector('#player-view');
+const statusText=document.querySelector('#status');
+const pipStatus=document.querySelector('#pip-status');
+const pipButton=document.querySelector('#pip-button');
+let activeVideo=null,pipWindow=null,pipFrame=null;
+
+function getVideo(value){
+  const text=value.trim();
+  const src=text.match(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i);
+  const candidates=src?[src[1],text]:[text];
+  for(const candidate of candidates){
+    try{
+      const url=new URL(candidate);
+      const host=url.hostname.toLowerCase().replace(/^www\./,'');
+      const isYoutube=['youtube.com','youtube-nocookie.com'].some(domain=>host===domain||host.endsWith('.'+domain));
+      if(host==='youtu.be'){
+        const id=url.pathname.split('/').filter(Boolean)[0];
+        if(id)return {id,embedUrl:new URL('/embed/'+id,'https://www.youtube.com')};
+      }
+      if(isYoutube){
+        if(url.pathname==='/watch'){
+          const id=url.searchParams.get('v');
+          if(id)return {id,embedUrl:new URL('/embed/'+id,'https://www.youtube.com')};
+        }
+        const id=url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/)?.[1];
+        if(id){
+          const embedUrl=new URL('/embed/'+id,'https://www.youtube.com');
+          for(const [key,val] of url.searchParams)if(key==='start'||key==='end'||key==='si')embedUrl.searchParams.set(key,val);
+          return {id,embedUrl};
+        }
+      }
+    }catch{}
+  }
+  return null;
+}
+
+function makeEmbedUrl(video){
+  const url=new URL(video.embedUrl);
+  url.searchParams.set('autoplay','1');
+  url.searchParams.set('controls','0');
+  url.searchParams.set('playsinline','1');
+  url.searchParams.set('rel','0');
+  url.searchParams.set('enablejsapi','1');
+  url.searchParams.set('origin',location.origin);
+  url.searchParams.set('widget_referrer',location.href);
+  return url.toString();
+}
+
+function sendPlayerCommand(command){
+  if(!pipFrame?.contentWindow)return;
+  pipFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:command,args:[]}), 'https://www.youtube.com');
+}
+
+function setupMediaSession(){
+  if(!('mediaSession'in navigator)||!activeVideo)return;
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:'YouTube video',
+      artist:'YouTube',
+      artwork:[{src:'https://i.ytimg.com/vi/'+activeVideo.id+'/hqdefault.jpg',sizes:'480x360',type:'image/jpeg'}]
+    });
+    navigator.mediaSession.playbackState='playing';
+    navigator.mediaSession.setActionHandler('play',()=>sendPlayerCommand('playVideo'));
+    navigator.mediaSession.setActionHandler('pause',()=>sendPlayerCommand('pauseVideo'));
+    navigator.mediaSession.setActionHandler('stop',()=>sendPlayerCommand('pauseVideo'));
+  }catch{}
+}
+
+async function openPictureInPicture(){
+  if(!activeVideo)return;
+  if(!('documentPictureInPicture'in window)){
+    pipStatus.textContent='Cửa sổ nổi cần Chrome hoặc Edge trên máy tính.';
+    return;
+  }
+  try{
+    if(!pipWindow||pipWindow.closed){
+      pipWindow=await window.documentPictureInPicture.requestWindow({width:480,height:270});
+      pipWindow.document.title='YouTube — Gọn';
+      const style=pipWindow.document.createElement('style');
+      style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
+      pipWindow.document.head.append(style);
+      pipWindow.addEventListener('pagehide',()=>{
+        pipWindow=null;
+        pipFrame=null;
+        pipStatus.textContent='Cửa sổ nổi đã đóng. Dán link khác hoặc mở lại video.';
+        if('mediaSession'in navigator)navigator.mediaSession.playbackState='paused';
+      });
+    }
+    pipFrame=pipWindow.document.createElement('iframe');
+    pipFrame.title='YouTube video';
+    pipFrame.referrerPolicy='strict-origin-when-cross-origin';
+    pipFrame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
+    pipFrame.src=makeEmbedUrl(activeVideo);
+    pipWindow.document.body.replaceChildren(pipFrame);
+    pipStatus.textContent='Video đang phát trong cửa sổ nổi. Bạn có thể di chuyển hoặc đổi kích thước cửa sổ.';
+    setupMediaSession();
+  }catch{
+    pipStatus.textContent='Không mở được cửa sổ nổi. Hãy dùng Chrome hoặc Edge trên máy tính.';
+  }
+}
+
+if(!('documentPictureInPicture'in window)){
+  pipButton.title='Cửa sổ nổi cần Chrome hoặc Edge trên máy tính';
+}
 pipButton.addEventListener('click',openPictureInPicture);
-window.onYouTubeIframeAPIReady=()=>{player=new YT.Player('youtube-player',{width:'100%',height:'100%',videoId:'',playerVars:{autoplay:0,controls:0,rel:0,playsinline:1,fs:0,disablekb:1,enablejsapi:1,origin:location.origin,widget_referrer:location.href},events:{onReady:setupMediaActions,onStateChange:event=>{if(event.data===YT.PlayerState.PLAYING){setMediaMetadata();setPlaybackState('playing')}else if(event.data===YT.PlayerState.PAUSED||event.data===YT.PlayerState.ENDED)setPlaybackState('paused')},onError:()=>{statusText.textContent='Video không phát được. Video này có thể bị giới hạn nhúng.'}}})};
-function startVideo(id,autoPip=false){if(!player?.loadVideoById){statusText.textContent='Trình phát đang tải, đợi một chút rồi dán lại nhé.';return}activeVideoId=id;welcome.hidden=true;playerView.hidden=false;if(autoPip)openPictureInPicture();player.loadVideoById(id)}
-loadForm.addEventListener('submit',event=>{event.preventDefault();const id=getVideoId(urlInput.value.trim());if(!id){statusText.textContent='Liên kết chưa đúng. Hãy dán URL video YouTube.';return}startVideo(id,true)});
-urlInput.addEventListener('paste',event=>{const text=event.clipboardData?.getData('text')?.trim()||'';const id=getVideoId(text);if(!id)return;event.preventDefault();urlInput.value=text;startVideo(id,true)});
-playButton.addEventListener('click',()=>player?.getPlayerState()===YT.PlayerState.PLAYING?player.pauseVideo():player?.playVideo());document.querySelector('#back-button').addEventListener('click',()=>{player?.stopVideo();playerView.hidden=true;welcome.hidden=false;urlInput.focus()});document.querySelector('#previous-button').addEventListener('click',()=>player?.seekTo(Math.max(0,player.getCurrentTime()-10),true));document.querySelector('#next-button').addEventListener('click',()=>window.open('https://www.youtube.com/watch?v='+activeVideoId,'_blank'));
-window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstall=event;document.querySelector('#install-button').hidden=false});document.querySelector('#install-button').addEventListener('click',async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null});if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+
+function startVideo(value){
+  const video=getVideo(value);
+  if(!video){
+    statusText.textContent='Không nhận ra link hoặc mã nhúng YouTube. Hãy dán nguyên mã iframe từ YouTube.';
+    return;
+  }
+  activeVideo=video;
+  document.querySelector('#track-title').textContent='YouTube video';
+  document.querySelector('#track-author').textContent='Cửa sổ nổi';
+  welcome.hidden=true;
+  playerView.hidden=false;
+  openPictureInPicture();
+}
+
+loadForm.addEventListener('submit',event=>{
+  event.preventDefault();
+  startVideo(urlInput.value);
+});
+
+urlInput.addEventListener('paste',event=>{
+  const text=event.clipboardData?.getData('text')?.trim()||'';
+  if(!getVideo(text))return;
+  event.preventDefault();
+  urlInput.value=text;
+  startVideo(text);
+});
+
+document.querySelector('#back-button').addEventListener('click',()=>{
+  pipWindow?.close();
+  playerView.hidden=true;
+  welcome.hidden=false;
+  urlInput.focus();
+});
+window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  document.querySelector('#install-button').hidden=false;
+  document.querySelector('#install-button').addEventListener('click',async()=>{
+    event.prompt();
+    await event.userChoice;
+  },{once:true});
+});
+if('serviceWorker'in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').then(registration=>registration.update()).catch(()=>{}));
+}
