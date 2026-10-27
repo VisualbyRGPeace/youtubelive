@@ -13,7 +13,6 @@ const speedControl=document.querySelector('#speed-control');
 const speedSelect=document.querySelector('#speed-select');
 const youtubeOptions=document.querySelector('#youtube-options');
 const captionsToggle=document.querySelector('#captions-toggle');
-const audioLanguageButton=document.querySelector('#audio-language-button');
 const volumeIcon=document.querySelector('#volume-icon');
 const seekSlider=document.querySelector('#seek-slider');
 const currentTimeLabel=document.querySelector('#current-time');
@@ -305,17 +304,6 @@ captionsToggle.addEventListener('change',()=>{
   try{localStorage.setItem('gon-youtube-captions-enabled',captionsToggle.checked?'1':'0');}catch{}
   sendPlayerCommand('setCaptions',[captionsToggle.checked]);
 });
-audioLanguageButton.addEventListener('click',()=>{
-  if(!activeVideo||activeVideo.platform!=='youtube')return;
-  const url=new URL('/watch','https://www.youtube.com');
-  if(activeVideo.id)url.searchParams.set('v',activeVideo.id);
-  if(activeVideo.list)url.searchParams.set('list',activeVideo.list);
-  url.searchParams.set('hl','vi');
-  url.searchParams.set('gl','VN');
-  window.open(url.toString(),'_blank','noopener,noreferrer');
-  setText(pipStatus,'Đã mở YouTube bằng tiếng Việt. Nếu video có bản lồng tiếng Việt, chọn bánh răng → Âm thanh → Tiếng Việt.');
-});
-
 /* ---------- Thanh tua ---------- */
 function queuePreview(time){
   // gộp các lần kéo thanh trượt, tối đa ~8 lệnh/giây để video không bị giật
