@@ -11,6 +11,9 @@ const nextButton=document.querySelector('#next-button');
 const volumeSlider=document.querySelector('#volume-slider');
 const speedControl=document.querySelector('#speed-control');
 const speedSelect=document.querySelector('#speed-select');
+const youtubeOptions=document.querySelector('#youtube-options');
+const captionsToggle=document.querySelector('#captions-toggle');
+const audioLanguageButton=document.querySelector('#audio-language-button');
 const volumeIcon=document.querySelector('#volume-icon');
 const seekSlider=document.querySelector('#seek-slider');
 const currentTimeLabel=document.querySelector('#current-time');
@@ -114,6 +117,7 @@ transparencySlider.addEventListener('input',()=>applyTransparency(transparencySl
 transparencySlider.addEventListener('change',()=>{try{localStorage.setItem('gon-video-transparency',transparencySlider.value);}catch{}});
 applyTransparency(transparencySlider.value);
 updateLockButtons();updatePlayButton();updateVolumeIcon();setFill(seekSlider);
+try{const savedCaptions=localStorage.getItem('gon-youtube-captions-enabled');if(savedCaptions!==null)captionsToggle.checked=savedCaptions==='1';}catch{}
 
 function openTikTokBrowseWindow(){
   const popup=window.open('https://www.tiktok.com/','_blank','popup=yes,width=420,height=760,resizable=yes,scrollbars=yes,noreferrer');
@@ -191,7 +195,10 @@ function getPreferredPlaybackRate(){try{const rate=Number(localStorage.getItem('
 function makePlayerUrl(video){
   const url=new URL('player.html',location.href);
   url.searchParams.set('platform',video.platform||'youtube');
-  if((video.platform||'youtube')==='youtube')url.searchParams.set('rate',String(getPreferredPlaybackRate()));
+  if((video.platform||'youtube')==='youtube'){
+    url.searchParams.set('rate',String(getPreferredPlaybackRate()));
+    url.searchParams.set('cc',captionsToggle.checked?'1':'0');
+  }
   if(video.id)url.searchParams.set('v',video.id);
   if(video.username)url.searchParams.set('username',video.username);
   if(video.list)url.searchParams.set('list',video.list);
@@ -294,6 +301,18 @@ speedSelect.addEventListener('change',()=>{
   try{localStorage.setItem('gon-youtube-playback-rate',String(rate));}catch{}
   sendPlayerCommand('setPlaybackRate',[rate]);
 });
+captionsToggle.addEventListener('change',()=>{
+  try{localStorage.setItem('gon-youtube-captions-enabled',captionsToggle.checked?'1':'0');}catch{}
+  sendPlayerCommand('setCaptions',[captionsToggle.checked]);
+});
+audioLanguageButton.addEventListener('click',()=>{
+  if(!activeVideo||activeVideo.platform!=='youtube')return;
+  const url=new URL('/watch','https://www.youtube.com');
+  if(activeVideo.id)url.searchParams.set('v',activeVideo.id);
+  if(activeVideo.list)url.searchParams.set('list',activeVideo.list);
+  window.open(url.toString(),'_blank','noopener,noreferrer');
+  setText(pipStatus,'YouTube đã mở video trong tab mới. Chọn bánh răng → Âm thanh → Ngôn ngữ lồng tiếng.');
+});
 
 /* ---------- Thanh tua ---------- */
 function queuePreview(time){
@@ -343,7 +362,7 @@ function startVideo(value){
   const isTikTokProfile=video.platform==='tiktok-profile';
   document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
