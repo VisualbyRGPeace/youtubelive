@@ -310,8 +310,10 @@ audioLanguageButton.addEventListener('click',()=>{
   const url=new URL('/watch','https://www.youtube.com');
   if(activeVideo.id)url.searchParams.set('v',activeVideo.id);
   if(activeVideo.list)url.searchParams.set('list',activeVideo.list);
+  url.searchParams.set('hl','vi');
+  url.searchParams.set('gl','VN');
   window.open(url.toString(),'_blank','noopener,noreferrer');
-  setText(pipStatus,'YouTube đã mở video trong tab mới. Chọn bánh răng → Âm thanh → Ngôn ngữ lồng tiếng.');
+  setText(pipStatus,'Đã mở YouTube bằng tiếng Việt. Nếu video có bản lồng tiếng Việt, chọn bánh răng → Âm thanh → Tiếng Việt.');
 });
 
 /* ---------- Thanh tua ---------- */
