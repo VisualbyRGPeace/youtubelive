@@ -22,6 +22,31 @@ body.locked #youtube-player iframe{pointer-events:none}
   const videoId=params.get('v')||'';
   const playlistId=params.get('list')||'';
   const platform=params.get('platform')||'youtube';
+  if(platform==='tiktok-profile'){
+    const username=(params.get('username')||'').replace(/[^A-Za-z0-9._]/g,'');
+    if(!username){document.body.textContent='Thiếu tên hồ sơ TikTok.';return;}
+    const host=document.querySelector('#youtube-player');
+    document.body.style.overflow='auto';
+    host.style.width='100%';host.style.height='100%';host.style.overflow='auto';
+    const profile=document.createElement('blockquote');
+    profile.className='tiktok-embed';
+    profile.setAttribute('cite','https://www.tiktok.com/@'+username);
+    profile.setAttribute('data-unique-id',username);
+    profile.setAttribute('data-embed-type','creator');
+    profile.style.cssText='max-width:720px;min-width:288px;margin:0 auto;';
+    const section=document.createElement('section');
+    const link=document.createElement('a');
+    link.href='https://www.tiktok.com/@'+username+'?refer=creator_embed';
+    link.target='_blank';link.rel='noopener';link.textContent='@'+username;
+    section.appendChild(link);profile.appendChild(section);host.appendChild(profile);
+    const script=document.createElement('script');
+    script.async=true;script.src='https://www.tiktok.com/embed.js';document.body.appendChild(script);
+    window.addEventListener('message',event=>{
+      if(event.origin!==location.origin||event.data?.type!=='gon-command'||event.data.func!=='setLocked')return;
+      document.body.classList.toggle('locked',Boolean(event.data.args?.[0]));
+    });
+    return;
+  }
   if(platform==='tiktok'){
     if(!videoId){document.body.textContent='Thiếu mã video TikTok.';return;}
     const host=document.querySelector('#youtube-player');
