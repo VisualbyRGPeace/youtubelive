@@ -22,6 +22,7 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 /* Layout */
 .app-shell{position:relative;width:min(100% - 40px,760px);min-height:100vh;min-height:100dvh;margin:auto;display:flex;flex-direction:column}
 .topbar{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.top-actions{display:flex;align-items:center;gap:9px}.tiktok-open{text-decoration:none}
 .brand{display:flex;align-items:center;gap:10px;color:#f5f2eb;text-decoration:none;font:800 22px Manrope,sans-serif;letter-spacing:-1px}
 .brand-mark{display:grid;place-items:center;width:30px;height:30px;background:linear-gradient(145deg,#ff5a50,#e6342b);color:#fff;border-radius:10px;box-shadow:0 6px 18px #fb443b40,inset 0 1px 0 #ffffff40}
 .brand-mark .icon{width:14px;height:14px;margin-left:1px}
