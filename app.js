@@ -109,6 +109,8 @@ function tiktokVideoFromUrl(url){
   return {platform:'tiktok',id:match[1],list:'',embedUrl:new URL('/player/v1/'+match[1],'https://www.tiktok.com')};
 }
 function videoFromUrl(url){
+  const tiktok=tiktokVideoFromUrl(url);
+  if(tiktok)return tiktok;
   const host=url.hostname.toLowerCase().replace(/^www\./,'');
   const isYoutube=['youtube.com','youtube-nocookie.com'].some(domain=>host===domain||host.endsWith('.'+domain));
   const copyParams=target=>{for(const key of ['start','end','si','list','index']){const value=url.searchParams.get(key);if(value)target.searchParams.set(key,value)}};
