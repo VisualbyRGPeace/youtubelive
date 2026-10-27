@@ -11,3 +11,9 @@
 .drag-strip{left:env(titlebar-area-x,0);top:env(titlebar-area-y,0);width:env(titlebar-area-width,100%);height:env(titlebar-area-height,33px);-webkit-app-region:drag;app-region:drag}
 .inline-back{top:50%;left:6px;transform:translateY(-50%);width:26px;height:26px;font-size:13px}
 }
+
+.opacity-control{width:min(100%,460px);margin:22px auto 10px;padding:14px 16px;border:1px solid #ffffff18;border-radius:14px;background:#ffffff08}
+.opacity-control label{display:flex;justify-content:space-between;align-items:center;color:#e7e4dc;font-size:13px;font-weight:600}
+.opacity-control output{color:#c5c1b6;font-variant-numeric:tabular-nums}
+.opacity-control input{display:block;width:100%;margin:13px 0 8px;accent-color:#fb443b;cursor:pointer}
+.opacity-control p{margin:0;color:#85837c;font-size:11px}
