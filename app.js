@@ -102,7 +102,7 @@ updateLockButtons();updatePlayButton();updateVolumeIcon();setFill(seekSlider);
 
 /* ---------- Nhận link YouTube và TikTok ---------- */
 function isTikTokHome(value){
-  try{const url=new URL(value.trim());return url.hostname.toLowerCase().replace(/^www\\./,'')==='tiktok.com'&&url.pathname==='/';}catch{return false;}
+  try{const url=new URL(value.trim());return url.hostname.toLowerCase().replace(/^www\./,'')==='tiktok.com'&&url.pathname==='/';}catch{return false;}
 }
 function tiktokVideoFromUrl(url){
   const host=url.hostname.toLowerCase().replace(/^www\./,'');
