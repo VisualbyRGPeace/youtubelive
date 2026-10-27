@@ -2,12 +2,12 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#111111"><meta name="color-scheme" content="dark"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="description" content="Trình phát YouTube gọn nhẹ với điều khiển media của Windows.">
+<meta name="theme-color" content="#111111"><meta name="color-scheme" content="dark"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="description" content="Trình phát YouTube và TikTok gọn nhẹ trong cửa sổ nổi.">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
-<title>Gọn — YouTube mini player</title>
+<title>Gọn — Video mini player</title>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -32,7 +32,7 @@
 <main class="app-shell">
 <header class="topbar"><a class="brand" href="./" aria-label="Gọn"><span class="brand-mark"><svg class="icon"><use href="#i-play"/></svg></span><span>gọn</span></a><button id="install-button" class="install-button" hidden><svg class="icon"><use href="#i-install"/></svg><span>Cài ứng dụng</span></button></header>
 
-<section class="welcome" id="welcome"><p class="eyebrow">YOUTUBE · GỌN NHẸ</p><h1>Nghe YouTube,<br><span>gọn trong một cửa sổ.</span></h1><p class="intro">Dán liên kết hoặc mã nhúng video để bắt đầu. Cài ứng dụng và ghim vào taskbar để điều khiển media ngay từ Windows.</p><form id="load-form" class="url-form"><label class="sr-only" for="video-url">Liên kết hoặc mã nhúng YouTube</label><input id="video-url" type="text" placeholder="Dán link hoặc mã nhúng YouTube…" autocomplete="url" required><button type="submit"><span>Phát</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></form><p class="hint" id="status" aria-live="polite">Hỗ trợ link và mã nhúng từ YouTube</p></section>
+<section class="welcome" id="welcome"><p class="eyebrow">YOUTUBE & TIKTOK · GỌN NHẸ</p><h1>Nghe YouTube,<br><span>gọn trong một cửa sổ.</span></h1><p class="intro">Dán link YouTube hoặc TikTok để mở video dọc/ngang trong cửa sổ nổi nhỏ gọn.</p><form id="load-form" class="url-form"><label class="sr-only" for="video-url">Liên kết hoặc mã nhúng YouTube/TikTok</label><input id="video-url" type="text" placeholder="Dán link hoặc mã nhúng YouTube/TikTok…" autocomplete="url" required><button type="submit"><span>Phát</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></form><p class="hint" id="status" aria-live="polite">Hỗ trợ link YouTube và video TikTok</p></section>
 
 <section id="player-view" class="player-view" hidden>
 <div class="player-heading"><button id="back-button" class="back-button" aria-label="Chọn video khác" title="Chọn video khác"><svg class="icon"><use href="#i-back"/></svg></button><div class="track-copy"><p class="eyebrow">VIDEO ĐÃ CHỌN</p><h1 id="track-title">YouTube</h1><p id="track-author" class="track-author">Cửa sổ nổi</p></div><button id="pip-button" class="pip-button" aria-label="Mở video trong cửa sổ nổi" title="Mở video trong cửa sổ nổi"><svg class="icon"><use href="#i-pip"/></svg><span>Mở cửa sổ nổi</span></button></div>
@@ -47,7 +47,7 @@
 <button id="lock-toggle" class="lock-toggle" type="button" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><span id="lock-label">Khóa thao tác trong cửa sổ nổi</span></button>
 <p id="pip-status" class="player-note" aria-live="polite">Video tự phát trong cửa sổ nổi; dùng các nút điều khiển tại đây.</p>
 </section>
-<footer><span>Phát trực tiếp từ YouTube</span><span>Không cần tài khoản</span></footer></main>
+<footer><span>Video phát từ nền tảng gốc</span><span>YouTube · TikTok</span></footer></main>
 
 <div id="inline-player" class="inline-player" hidden><div class="drag-strip"><button id="inline-back" class="inline-back" aria-label="Chọn video khác" title="Chọn video khác"><svg class="icon"><use href="#i-back"/></svg></button><button id="inline-lock" class="inline-lock" aria-label="Khóa thao tác" title="Khóa thao tác" aria-pressed="false"><svg class="icon"><use href="#i-lock"/></svg></button></div><iframe id="inline-frame" title="YouTube video" allow="autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <script src="app.js"></script>
