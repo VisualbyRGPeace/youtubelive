@@ -21,14 +21,14 @@
   function save() { try { chrome.storage.local.set({ [KEY]: state }); } catch {} }
 
   const host = document.createElement('div');
-  host.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:2147483647;';
+  host.style.cssText = 'position:fixed;right:10px;top:10px;z-index:2147483647;';
   const root = host.attachShadow({ mode: 'closed' });
   root.innerHTML = `
     <style>
       *{box-sizing:border-box;font-family:system-ui,'Segoe UI',sans-serif}
       .fab{width:34px;height:34px;border:0;border-radius:50%;background:#000c;color:#fff;font-size:16px;cursor:pointer;box-shadow:0 4px 16px #0008;opacity:.55;transition:opacity .15s}
       .fab:hover,.wrap.open .fab{opacity:1}
-      .wrap{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+      .wrap{display:flex;flex-direction:column-reverse;align-items:flex-end;gap:8px}
       .panel{display:none;width:230px;padding:12px 14px;border-radius:14px;background:#141413f2;color:#f4f2ed;border:1px solid #ffffff22;box-shadow:0 10px 30px #0009}
       .wrap.open .panel{display:block}
       .row{margin:0 0 10px}.row:last-child{margin:0}
