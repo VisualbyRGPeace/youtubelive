@@ -22,6 +22,9 @@ const lockLabel=document.querySelector('#lock-label');
 const inlineLock=document.querySelector('#inline-lock');
 const transparencySlider=document.querySelector('#transparency-slider');
 const transparencyValue=document.querySelector('#transparency-value');
+const scaleControl=document.querySelector('#scale-control');
+const scaleSlider=document.querySelector('#scale-slider');
+const scaleValue=document.querySelector('#scale-value');
 const inlinePlayer=document.querySelector('#inline-player');
 const inlineFrame=document.querySelector('#inline-frame');
 const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
@@ -108,6 +111,29 @@ function applyTransparency(value){
   if(pipFrame)pipFrame.style.opacity=opacity;
   if(inlineFrame)inlineFrame.style.opacity=opacity;
 }
+function scaleFrame(frame,scale,wUnit,hUnit){
+  if(!frame)return;
+  if(scale>=1){frame.style.width='';frame.style.height='';frame.style.transform='';frame.style.transformOrigin='';return;}
+  // render iframe lớn hơn rồi co lại để nội dung TikTok hiện nhỏ hơn nhưng vẫn lấp đầy cửa sổ
+  frame.style.width=(100/scale)+wUnit;frame.style.height=(100/scale)+hUnit;
+  frame.style.transformOrigin='0 0';frame.style.transform='scale('+scale+')';
+}
+function applyScale(value=scaleSlider.value){
+  const percent=Math.max(40,Math.min(100,Number(value)||100));
+  const scale=percent/100;
+  scaleValue.textContent=percent+'%';
+  setFill(scaleSlider);
+  const isTikTok=activeVideo?.platform?.startsWith('tiktok');
+  scaleFrame(pipFrame,isTikTok?scale:1,'vw','vh');
+  scaleFrame(inlineFrame,isTikTok?scale:1,'%','%');
+}
+try{
+  const savedScale=localStorage.getItem('gon-tiktok-scale');
+  if(savedScale!==null&&Number.isFinite(Number(savedScale)))scaleSlider.value=savedScale;
+}catch{}
+scaleSlider.addEventListener('input',()=>applyScale());
+scaleSlider.addEventListener('change',()=>{try{localStorage.setItem('gon-tiktok-scale',scaleSlider.value);}catch{}});
+setFill(scaleSlider);
 try{
   const saved=localStorage.getItem('gon-video-transparency');
   if(saved!==null&&Number.isFinite(Number(saved)))transparencySlider.value=saved;
@@ -122,7 +148,7 @@ function openTikTokBrowseWindow(){
   const popup=window.open('https://www.tiktok.com/','_blank','popup=yes,width=420,height=760,resizable=yes,scrollbars=yes,noreferrer');
   if(popup){
     try{popup.focus();}catch{}
-    setText(statusText,'TikTok đã mở trong cửa sổ dọc nhỏ. Kéo viền cửa sổ để đổi kích thước.');
+    setText(statusText,'TikTok đã mở trong cửa sổ dọc nhỏ. Muốn thu nhỏ/chỉnh độ trong suốt ngay trên trang TikTok, hãy cài tiện ích trong thư mục tiktok-overlay-extension (xem README).');
     return true;
   }
   setText(statusText,'Trình duyệt đã chặn cửa sổ bật lên. Hãy cho phép pop-up cho trang này rồi thử lại.');
@@ -279,8 +305,9 @@ async function openPictureInPicture(){
     pipFrame.referrerPolicy='strict-origin-when-cross-origin';
     pipFrame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
     pipFrame.src=makePlayerUrl(activeVideo);
-    applyTransparency(transparencySlider.value);
     pipWindow.document.body.replaceChildren(pipFrame);
+    applyTransparency(transparencySlider.value);
+    applyScale();
     pipStatus.textContent=activeVideo.platform==='tiktok-profile'?'Hồ sơ TikTok đã mở. Cuộn ngang qua các video của creator.':activeVideo.platform==='tiktok'?'TikTok đang phát trong cửa sổ nổi. Video liên quan có thể xuất hiện khi clip kết thúc.':activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
     updateLockButtons();
     if(playerLocked)sendPlayerCommand('setLocked',[true]);
@@ -352,7 +379,7 @@ function startVideo(value){
   const isTikTokProfile=video.platform==='tiktok-profile';
   document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';scaleControl.hidden=!video.platform.startsWith('tiktok');speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
@@ -362,6 +389,7 @@ function startInline(){
   inlineFrame.src=makePlayerUrl(activeVideo);
   applyLockToSurface();
   applyTransparency(transparencySlider.value);
+  applyScale();
   inlinePlayer.hidden=false;setupMediaSession();
 }
 function stopInline(){
