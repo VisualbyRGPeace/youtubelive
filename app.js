@@ -101,6 +101,9 @@ applyTransparency(transparencySlider.value);
 updateLockButtons();updatePlayButton();updateVolumeIcon();setFill(seekSlider);
 
 /* ---------- Nhận link YouTube và TikTok ---------- */
+function isTikTokHome(value){
+  try{const url=new URL(value.trim());return url.hostname.toLowerCase().replace(/^www\\./,'')==='tiktok.com'&&url.pathname==='/';}catch{return false;}
+}
 function tiktokVideoFromUrl(url){
   const host=url.hostname.toLowerCase().replace(/^www\./,'');
   if(host!=='tiktok.com'&&!host.endsWith('.tiktok.com'))return null;
@@ -293,6 +296,11 @@ inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 /* ---------- Bắt đầu / dừng ---------- */
 function startVideo(value){
   const video=getVideo(value);
+  if(!video&&isTikTokHome(value)){
+    window.open('https://www.tiktok.com/','_blank','noopener,noreferrer');
+    statusText.textContent='TikTok đã được mở trong tab mới để bạn lướt. Link từng video hoặc hồ sơ TikTok sẽ mở trong cửa sổ nổi.';
+    return;
+  }
   if(!video){statusText.textContent='Không nhận ra link. Dùng link YouTube hoặc link TikTok đầy đủ dạng tiktok.com/@ten/video/... hay tiktok.com/@ten.';return;}
   activeVideo=video;
   const isTikTokProfile=video.platform==='tiktok-profile';
