@@ -133,7 +133,7 @@ function receivePlayerState(event){
   else if(data.error)pipStatus.textContent='Video không cho phép phát nhúng hoặc đã xảy ra lỗi YouTube ('+data.error+').';
 }
 window.addEventListener('message',event=>{
-  if(event.source===inlineFrame.contentWindow)receivePlayerState(event);
+  if(event.source===inlineFrame.contentWindow||event.source===pipFrame?.contentWindow)receivePlayerState(event);
 });
 function attachPipMessages(){
   pipWindow.addEventListener('message',event=>{
@@ -183,7 +183,7 @@ nextButton.addEventListener('click',()=>sendPlayerCommand('nextVideo'));
 volumeSlider.addEventListener('input',()=>sendPlayerCommand('setVolume',[Number(volumeSlider.value)]));
 seekSlider.addEventListener('pointerdown',()=>{isSeeking=true;});
 seekSlider.addEventListener('keydown',()=>{isSeeking=true;});
-seekSlider.addEventListener('input',()=>{if(videoDuration>0){const preview=Number(seekSlider.value)/1000*videoDuration;currentTimeLabel.textContent=formatTime(preview);}});
+seekSlider.addEventListener('input',()=>{if(videoDuration>0){const preview=Number(seekSlider.value)/1000*videoDuration;currentTimeLabel.textContent=formatTime(preview);sendPlayerCommand('seekToPreview',[preview]);}});
 seekSlider.addEventListener('change',()=>{if(videoDuration>0)sendPlayerCommand('seekTo',[Number(seekSlider.value)/1000*videoDuration]);isSeeking=false;});
 lockToggle.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
