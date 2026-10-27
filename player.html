@@ -107,22 +107,24 @@ body.locked #youtube-player iframe{pointer-events:none}
     return;
   }
   if(!videoId&&!playlistId){document.body.textContent='Thiếu mã video hoặc playlist.';return;}
-  let player=null,ready=false,locked=false,seq=0,lastKey='',timer=0;
+  let player=null,ready=false,locked=false,seq=0,lastKey='',timer=0,preferredPlaybackRate=Number(params.get('rate'))||1;
   const sid=Math.random().toString(36).slice(2);
   const queued=[];
   function sendState(extra={}){
     if(!player||!ready)return;
-    let currentTime=0,duration=0,state=-1;
+    let currentTime=0,duration=0,state=-1,playbackRate=1,playbackRates=[1];
     try{
       currentTime=player.getCurrentTime()||0;
       duration=player.getDuration()||0;
       state=player.getPlayerState();
+      playbackRate=player.getPlaybackRate()||1;
+      playbackRates=player.getAvailablePlaybackRates()||[1];
     }catch{}
     // chỉ gửi khi có thay đổi thật sự (tối đa ~4 lần/giây) để trang chính không phải xử lý thừa
-    const key=locked+'|'+Math.floor(currentTime*4)+'|'+duration+'|'+state+'|'+JSON.stringify(extra);
+    const key=locked+'|'+Math.floor(currentTime*4)+'|'+duration+'|'+state+'|'+playbackRate+'|'+playbackRates.join(',')+'|'+JSON.stringify(extra);
     if(key===lastKey)return;
     lastKey=key;
-    const message={type:'gon-player-state',sid,seq:++seq,locked,currentTime,duration,state,...extra};
+    const message={type:'gon-player-state',sid,seq:++seq,locked,currentTime,duration,state,playbackRate,playbackRates,...extra};
     window.parent.postMessage(message,location.origin);
     try{window.parent.opener?.postMessage(message,location.origin);}catch{}
   }
@@ -137,6 +139,7 @@ body.locked #youtube-player iframe{pointer-events:none}
     if(func==='seekTo')player.seekTo(Number(args[0])||0,true);
     else if(func==='seekToPreview')player.seekTo(Number(args[0])||0,false);
     else if(func==='setVolume')player.setVolume(Math.max(0,Math.min(100,Number(args[0])||0)));
+    else if(func==='setPlaybackRate'){preferredPlaybackRate=Number(args[0])||1;player.setPlaybackRate(preferredPlaybackRate);}
     else if(['playVideo','pauseVideo','stopVideo','nextVideo','previousVideo','mute','unMute'].includes(func)&&typeof player[func]==='function')player[func]();
     sendState();
   }
@@ -162,11 +165,16 @@ body.locked #youtube-player iframe{pointer-events:none}
         player=event.target;ready=true;
         player.setVolume(80);
         for(const [func,args] of queued.splice(0))applyCommand(func,args);
+        player.setPlaybackRate(preferredPlaybackRate);
         player.playVideo();
         sendState({ready:true});
         timer=setInterval(()=>sendState(),250);
       },
-      onStateChange(event){sendState({ready:true});},
+      onStateChange(event){
+        sendState({ready:true});
+        if(event.data===1&&Math.abs(player.getPlaybackRate()-preferredPlaybackRate)>0.01)setTimeout(()=>{if(ready){player.setPlaybackRate(preferredPlaybackRate);sendState({ready:true});}},180);
+      },
+      onPlaybackRateChange(){sendState({ready:true});},
       onAutoplayBlocked(){sendState({ready:true,autoplayBlocked:true});},
       onError(event){sendState({ready:true,error:event.data});}
     }};
