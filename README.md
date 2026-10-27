@@ -1,15 +1,21 @@
-# Gọn — YouTube mini player
+# Gọn — YouTube Picture-in-Picture
 
-Trình phát web tiếng Việt, gọn nhẹ, có thể cài như ứng dụng trên Windows.
+Trình phát YouTube web tiếng Việt, có nút đưa video vào cửa sổ nổi luôn trên các ứng dụng khác.
 
-## Xuất bản qua GitHub Pages
+## Dùng thử
 
-Repository dùng GitHub Actions để xuất bản khi có cập nhật lên nhánh `main`. Trong **Settings → Pages**, chọn **GitHub Actions** làm nguồn xuất bản nếu GitHub chưa bật Pages tự động.
+1. Mở trang GitHub Pages bằng Chrome hoặc Edge trên máy tính.
+2. Dán liên kết YouTube và chọn **Phát**.
+3. Chọn **Cửa sổ nổi** để tách video ra cửa sổ Picture-in-Picture. Đóng cửa sổ nổi để đưa video trở lại trang.
+4. Có thể cài ứng dụng từ trình duyệt rồi ghim vào taskbar.
 
-Sau khi xuất bản, mở trang bằng Edge hoặc Chrome, phát video rồi chọn cài ứng dụng từ trình duyệt. Ghim ứng dụng vào taskbar để mở nhanh.
+## Xuất bản
+
+GitHub Actions xuất bản website từ nhánh `main`. Trong **Settings → Pages**, chọn **GitHub Actions** làm nguồn xuất bản nếu Pages chưa được bật cho repository.
 
 ## Ghi chú
 
-- Thẻ điều khiển Windows phụ thuộc trình duyệt và hỗ trợ Media Session API; một số phiên bản có thể không hiện đủ thông tin hoặc nút.
-- Video phát trực tiếp từ YouTube. Một số video bị chủ kênh giới hạn nhúng nên không phát trong app.
-- Ứng dụng không tải hoặc lưu nội dung video.
+- Cửa sổ nổi dùng Document Picture-in-Picture, hiện cần Chrome hoặc Edge trên máy tính. Cửa sổ do trình duyệt quản lý; người dùng có thể di chuyển và đổi kích thước theo khả năng của trình duyệt.
+- Điều khiển media của Windows tùy vào hỗ trợ Media Session API của trình duyệt.
+- Video phát từ YouTube. Một số video không cho nhúng và sẽ không phát trong app.
+- Ứng dụng không tải hoặc lưu video.
