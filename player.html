@@ -107,7 +107,7 @@ body.locked #youtube-player iframe{pointer-events:none}
     return;
   }
   if(!videoId&&!playlistId){document.body.textContent='Thiếu mã video hoặc playlist.';return;}
-  let player=null,ready=false,locked=false,seq=0,lastKey='',timer=0,preferredPlaybackRate=Number(params.get('rate'))||1;
+  let player=null,ready=false,locked=false,seq=0,lastKey='',timer=0,preferredPlaybackRate=Number(params.get('rate'))||1,captionsEnabled=params.get('cc')!=='0',currentVideoId=videoId,resumeState=null;
   const sid=Math.random().toString(36).slice(2);
   const queued=[];
   function sendState(extra={}){
@@ -120,20 +120,20 @@ body.locked #youtube-player iframe{pointer-events:none}
       playbackRate=player.getPlaybackRate()||1;
       playbackRates=player.getAvailablePlaybackRates()||[1];
     }catch{}
-    // chỉ gửi khi có thay đổi thật sự (tối đa ~4 lần/giây) để trang chính không phải xử lý thừa
-    const key=locked+'|'+Math.floor(currentTime*4)+'|'+duration+'|'+state+'|'+playbackRate+'|'+playbackRates.join(',')+'|'+JSON.stringify(extra);
+    const key=locked+'|'+Math.floor(currentTime*4)+'|'+duration+'|'+state+'|'+playbackRate+'|'+playbackRates.join(',')+'|'+captionsEnabled+'|'+JSON.stringify(extra);
     if(key===lastKey)return;
     lastKey=key;
-    const message={type:'gon-player-state',sid,seq:++seq,locked,currentTime,duration,state,playbackRate,playbackRates,...extra};
+    const message={type:'gon-player-state',sid,seq:++seq,locked,currentTime,duration,state,playbackRate,playbackRates,captionsEnabled,...extra};
     window.parent.postMessage(message,location.origin);
     try{window.parent.opener?.postMessage(message,location.origin);}catch{}
   }
   function applyCommand(func,args=[]){
     if(func==='setLocked'){
-      locked=Boolean(args[0]);
-      document.body.classList.toggle('locked',locked);
-      sendState();
-      return;
+      locked=Boolean(args[0]);document.body.classList.toggle('locked',locked);sendState();return;
+    }
+    if(func==='setCaptions'){
+      if(!ready){queued.push([func,args]);return;}
+      setCaptionsEnabled(Boolean(args[0]));return;
     }
     if(!ready){queued.push([func,args]);return;}
     if(func==='seekTo')player.seekTo(Number(args[0])||0,true);
@@ -143,30 +143,56 @@ body.locked #youtube-player iframe{pointer-events:none}
     else if(['playVideo','pauseVideo','stopVideo','nextVideo','previousVideo','mute','unMute'].includes(func)&&typeof player[func]==='function')player[func]();
     sendState();
   }
-  window.addEventListener('message',event=>{
-    if(event.origin!==location.origin||event.data?.type!=='gon-command')return;
-    applyCommand(event.data.func,event.data.args||[]);
-  });
-  window.addEventListener('keydown',event=>{
-    if(event.altKey&&event.key.toLowerCase()==='l'){event.preventDefault();applyCommand('setLocked',[!locked]);}
-  });
-  // Tạm dừng vòng lặp báo trạng thái khi cửa sổ bị ẩn để đỡ tốn CPU
-  document.addEventListener('visibilitychange',()=>{
-    if(!ready)return;
-    clearInterval(timer);timer=0;
-    if(!document.hidden){sendState();timer=setInterval(()=>sendState(),250);}
-  });
-  window.onYouTubeIframeAPIReady=function(){
-    const playerVars={autoplay:1,controls:0,disablekb:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin,widget_referrer:location.href,hl:'vi',cc_lang_pref:'vi',cc_load_policy:1};
+  function setCaptionsEnabled(value){
+    const enabled=Boolean(value);
+    if(enabled===captionsEnabled){sendState();return;}
+    if(!ready){queued.push(['setCaptions',[enabled]]);return;}
+    let state={currentTime:0,playing:true,volume:80,videoId:currentVideoId,playlistIndex:-1};
+    try{
+      state.currentTime=player.getCurrentTime()||0;
+      state.playing=player.getPlayerState()===1;
+      state.volume=player.getVolume();
+      state.videoId=new URL(player.getVideoUrl()).searchParams.get('v')||currentVideoId;
+      state.playlistIndex=player.getPlaylistIndex();
+      preferredPlaybackRate=player.getPlaybackRate()||preferredPlaybackRate;
+    }catch{}
+    captionsEnabled=enabled;
+    resumeState=state;
+    clearInterval(timer);timer=0;ready=false;lastKey='';
+    const oldFrame=player.getIframe();
+    const host=document.createElement('div');host.id='youtube-player';
+    oldFrame.replaceWith(host);
+    player.destroy();player=null;
+    createPlayer();
+  }
+  function createPlayer(){
+    const restore=resumeState;
+    const playerVars={autoplay:1,controls:0,disablekb:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin,widget_referrer:location.href,hl:'vi',cc_lang_pref:'vi',cc_load_policy:captionsEnabled?1:0};
     for(const key of ['start','end','index'])if(params.has(key))playerVars[key]=Number(params.get(key))||0;
+    if(restore){
+      playerVars.start=Math.floor(restore.currentTime);
+      if(playlistId&&restore.playlistIndex>=0)playerVars.index=restore.playlistIndex;
+    }
     if(playlistId){playerVars.listType='playlist';playerVars.list=playlistId;}
     const options={width:'100%',height:'100%',playerVars,events:{
       onReady(event){
         player=event.target;ready=true;
-        player.setVolume(80);
-        for(const [func,args] of queued.splice(0))applyCommand(func,args);
+        const restoreState=resumeState;resumeState=null;
+        player.setVolume(restoreState?restoreState.volume:80);
+        const pending=queued.splice(0);
+        const captionCommands=pending.filter(([func])=>func==='setCaptions');
+        const otherCommands=pending.filter(([func])=>func!=='setCaptions');
+        if(captionCommands.length){
+          queued.push(...otherCommands);
+          const desired=Boolean(captionCommands[captionCommands.length-1][1][0]);
+          if(desired!==captionsEnabled){setCaptionsEnabled(desired);return;}
+        }
+        for(const [func,args] of otherCommands)applyCommand(func,args);
         player.setPlaybackRate(preferredPlaybackRate);
-        player.playVideo();
+        if(restoreState){
+          player.seekTo(restoreState.currentTime,true);
+          if(restoreState.playing)player.playVideo();else player.pauseVideo();
+        }else player.playVideo();
         sendState({ready:true});
         timer=setInterval(()=>sendState(),250);
       },
@@ -178,9 +204,22 @@ body.locked #youtube-player iframe{pointer-events:none}
       onAutoplayBlocked(){sendState({ready:true,autoplayBlocked:true});},
       onError(event){sendState({ready:true,error:event.data});}
     }};
-    if(videoId)options.videoId=videoId;
+    if(currentVideoId)options.videoId=currentVideoId;
     player=new YT.Player('youtube-player',options);
-  };
+  }
+  window.addEventListener('message',event=>{
+    if(event.origin!==location.origin||event.data?.type!=='gon-command')return;
+    applyCommand(event.data.func,event.data.args||[]);
+  });
+  window.addEventListener('keydown',event=>{
+    if(event.altKey&&event.key.toLowerCase()==='l'){event.preventDefault();applyCommand('setLocked',[!locked]);}
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(!ready)return;
+    clearInterval(timer);timer=0;
+    if(!document.hidden){sendState();timer=setInterval(()=>sendState(),250);}
+  });
+  window.onYouTubeIframeAPIReady=createPlayer;
   const script=document.createElement('script');
   script.src='https://www.youtube.com/iframe_api';
   script.async=true;
