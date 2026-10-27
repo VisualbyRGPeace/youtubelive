@@ -23,3 +23,11 @@
 .pip-button{width:auto;height:auto;padding:10px 13px;font:600 12px 'DM Sans',sans-serif;white-space:nowrap}
 .inline-lock{position:absolute;top:8px;left:44px;width:30px;height:30px;border:0;border-radius:50%;background:#000a;color:#fff;font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s;-webkit-app-region:no-drag;app-region:no-drag}
 .inline-player:hover .inline-lock,.inline-lock:focus-visible{opacity:.85}
+
+.main-controls{width:min(100%,460px);margin:20px auto 4px;display:flex;align-items:center;justify-content:center;gap:10px}
+.main-controls button{width:38px;height:38px;border:1px solid #ffffff1e;border-radius:50%;background:#ffffff0a;color:#f4f1e9;font-size:15px;cursor:pointer}
+.main-controls button:hover:not(:disabled){background:#ffffff20}
+.main-controls button:disabled{opacity:.35;cursor:not-allowed}
+.main-controls #play-toggle{width:46px;height:46px;background:#f4f1e9;color:#171714;font-size:16px}
+.main-volume{display:flex;align-items:center;gap:8px;width:min(150px,35vw);margin-left:5px;color:#c7c4bb;font-size:14px}
+.main-volume input{width:100%;accent-color:#fb443b;cursor:pointer}
