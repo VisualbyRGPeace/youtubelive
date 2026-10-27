@@ -105,8 +105,10 @@ function tiktokVideoFromUrl(url){
   const host=url.hostname.toLowerCase().replace(/^www\./,'');
   if(host!=='tiktok.com'&&!host.endsWith('.tiktok.com'))return null;
   const match=url.pathname.match(/^\/(?:@[^/]+\/video\/|player\/v1\/)(\d+)/i);
-  if(!match)return null;
-  return {platform:'tiktok',id:match[1],list:'',embedUrl:new URL('/player/v1/'+match[1],'https://www.tiktok.com')};
+  if(match)return {platform:'tiktok',id:match[1],list:'',embedUrl:new URL('/player/v1/'+match[1],'https://www.tiktok.com')};
+  const profile=url.pathname.match(/^\/@([A-Za-z0-9._]+)\/?$/);
+  if(profile)return {platform:'tiktok-profile',id:'',username:profile[1],list:'',embedUrl:url};
+  return null;
 }
 function videoFromUrl(url){
   const tiktok=tiktokVideoFromUrl(url);
@@ -156,6 +158,7 @@ function makePlayerUrl(video){
   const url=new URL('player.html',location.href);
   url.searchParams.set('platform',video.platform||'youtube');
   if(video.id)url.searchParams.set('v',video.id);
+  if(video.username)url.searchParams.set('username',video.username);
   if(video.list)url.searchParams.set('list',video.list);
   for(const key of ['start','end','si','list','index']){
     const value=video.embedUrl.searchParams.get(key);
@@ -164,7 +167,7 @@ function makePlayerUrl(video){
   return url.toString();
 }
 function setupMediaSession(){
-  if(!('mediaSession'in navigator)||!activeVideo)return;
+  if(!('mediaSession'in navigator)||!activeVideo||activeVideo.platform==='tiktok-profile')return;
   try{
     const metadata={title:(activeVideo.platform==='tiktok'?'TikTok':'YouTube')+' video',artist:activeVideo.platform==='tiktok'?'TikTok':'YouTube'};
     if(activeVideo.platform!=='tiktok'&&activeVideo.id)metadata.artwork=[{src:'https://i.ytimg.com/vi/'+activeVideo.id+'/hqdefault.jpg',sizes:'480x360',type:'image/jpeg'}];
@@ -216,7 +219,7 @@ async function openPictureInPicture(){
   }
   try{
     if(!pipWindow||pipWindow.closed){
-      pipWindow=await window.documentPictureInPicture.requestWindow({width:activeVideo.platform==='tiktok'?240:360,height:activeVideo.platform==='tiktok'?426:220,disallowReturnToOpener:true});
+      pipWindow=await window.documentPictureInPicture.requestWindow({width:activeVideo.platform==='tiktok'?240:activeVideo.platform==='tiktok-profile'?320:360,height:activeVideo.platform==='tiktok'?426:activeVideo.platform==='tiktok-profile'?560:220,disallowReturnToOpener:true});
       pipWindow.document.title='Video — Gọn';
       const style=pipWindow.document.createElement('style');
       style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
@@ -236,7 +239,7 @@ async function openPictureInPicture(){
     pipFrame.src=makePlayerUrl(activeVideo);
     applyTransparency(transparencySlider.value);
     pipWindow.document.body.replaceChildren(pipFrame);
-    pipStatus.textContent=activeVideo.platform==='tiktok'?'TikTok đang phát trong cửa sổ nổi. Video liên quan có thể xuất hiện khi clip kết thúc.':activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
+    pipStatus.textContent=activeVideo.platform==='tiktok-profile'?'Hồ sơ TikTok đã mở. Cuộn ngang qua các video của creator.':activeVideo.platform==='tiktok'?'TikTok đang phát trong cửa sổ nổi. Video liên quan có thể xuất hiện khi clip kết thúc.':activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
     updateLockButtons();
     if(playerLocked)sendPlayerCommand('setLocked',[true]);
     setupMediaSession();
@@ -290,11 +293,12 @@ inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 /* ---------- Bắt đầu / dừng ---------- */
 function startVideo(value){
   const video=getVideo(value);
-  if(!video){statusText.textContent='Không nhận ra link hoặc mã nhúng YouTube/TikTok. Với TikTok, hãy dùng link đầy đủ dạng tiktok.com/@.../video/...';return;}
+  if(!video){statusText.textContent='Không nhận ra link. Dùng link YouTube hoặc link TikTok đầy đủ dạng tiktok.com/@ten/video/... hay tiktok.com/@ten.';return;}
   activeVideo=video;
-  document.querySelector('#track-title').textContent=video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
-  document.querySelector('#track-author').textContent=video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=true;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;updateLockButtons();welcome.hidden=true;
+  const isTikTokProfile=video.platform==='tiktok-profile';
+  document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
+  document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
+  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
