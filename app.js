@@ -9,6 +9,8 @@ const playToggle=document.querySelector('#play-toggle');
 const previousButton=document.querySelector('#previous-button');
 const nextButton=document.querySelector('#next-button');
 const volumeSlider=document.querySelector('#volume-slider');
+const speedControl=document.querySelector('#speed-control');
+const speedSelect=document.querySelector('#speed-select');
 const volumeIcon=document.querySelector('#volume-icon');
 const seekSlider=document.querySelector('#seek-slider');
 const currentTimeLabel=document.querySelector('#current-time');
@@ -40,6 +42,19 @@ function updateLockButtons(){
   setIcon(inlineLock,playerLocked?'unlock':'lock');
   inlineLock.title=label;inlineLock.setAttribute('aria-label',label);
   inlineLock.setAttribute('aria-pressed',String(playerLocked));
+}
+function updateSpeedOptions(rates,currentRate){
+  const values=[...new Set((Array.isArray(rates)?rates:[1]).map(Number).filter(rate=>Number.isFinite(rate)&&rate>0))].sort((a,b)=>a-b);
+  if(!values.length)values.push(1);
+  const key=values.join(',');
+  if(speedSelect.dataset.rates!==key){
+    speedSelect.replaceChildren(...values.map(rate=>{const option=document.createElement('option');option.value=String(rate);option.textContent=rate+'×';return option;}));
+    speedSelect.dataset.rates=key;
+  }
+  const actual=Number(currentRate);
+  if(values.includes(actual))speedSelect.value=String(actual);
+  else if(!values.includes(Number(speedSelect.value)))speedSelect.value=String(values.includes(1)?1:values[0]);
+  speedSelect.disabled=values.length<2;
 }
 function updateVolumeIcon(){
   const value=Number(volumeSlider.value);
@@ -172,9 +187,11 @@ function getVideo(value){
   }
   return null;
 }
+function getPreferredPlaybackRate(){try{const rate=Number(localStorage.getItem('gon-youtube-playback-rate'));return Number.isFinite(rate)&&rate>0?rate:1;}catch{return 1;}}
 function makePlayerUrl(video){
   const url=new URL('player.html',location.href);
   url.searchParams.set('platform',video.platform||'youtube');
+  if((video.platform||'youtube')==='youtube')url.searchParams.set('rate',String(getPreferredPlaybackRate()));
   if(video.id)url.searchParams.set('v',video.id);
   if(video.username)url.searchParams.set('username',video.username);
   if(video.list)url.searchParams.set('list',video.list);
@@ -209,6 +226,7 @@ function receivePlayerState(event){
   }
   if(playerLocked!==Boolean(data.locked)){playerLocked=Boolean(data.locked);updateLockButtons();}
   if(Number.isFinite(Number(data.duration)))updateTimeline(data.currentTime,data.duration);
+  if(activeVideo?.platform==='youtube'&&Array.isArray(data.playbackRates))updateSpeedOptions(data.playbackRates,data.playbackRate);
   if(data.state===1){
     if(!isPlaying){isPlaying=true;updatePlayButton();}
     if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';
@@ -271,6 +289,11 @@ playToggle.addEventListener('click',()=>setPlaying(!isPlaying));
 previousButton.addEventListener('click',()=>sendPlayerCommand('previousVideo'));
 nextButton.addEventListener('click',()=>sendPlayerCommand('nextVideo'));
 volumeSlider.addEventListener('input',()=>{updateVolumeIcon();sendPlayerCommand('setVolume',[Number(volumeSlider.value)]);});
+speedSelect.addEventListener('change',()=>{
+  const rate=Number(speedSelect.value)||1;
+  try{localStorage.setItem('gon-youtube-playback-rate',String(rate));}catch{}
+  sendPlayerCommand('setPlaybackRate',[rate]);
+});
 
 /* ---------- Thanh tua ---------- */
 function queuePreview(time){
@@ -320,7 +343,7 @@ function startVideo(value){
   const isTikTokProfile=video.platform==='tiktok-profile';
   document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
