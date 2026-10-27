@@ -154,7 +154,7 @@ body.locked #youtube-player iframe{pointer-events:none}
     if(!document.hidden){sendState();timer=setInterval(()=>sendState(),250);}
   });
   window.onYouTubeIframeAPIReady=function(){
-    const playerVars={autoplay:1,controls:0,disablekb:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin,widget_referrer:location.href};
+    const playerVars={autoplay:1,controls:0,disablekb:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin,widget_referrer:location.href,hl:'vi',cc_lang_pref:'vi',cc_load_policy:1};
     for(const key of ['start','end','index'])if(params.has(key))playerVars[key]=Number(params.get(key))||0;
     if(playlistId){playerVars.listType='playlist';playerVars.list=playlistId;}
     const options={width:'100%',height:'100%',playerVars,events:{
