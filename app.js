@@ -75,7 +75,7 @@ async function openPictureInPicture(){
   }
   try{
     if(!pipWindow||pipWindow.closed){
-      pipWindow=await window.documentPictureInPicture.requestWindow({width:480,height:270});
+      pipWindow=await window.documentPictureInPicture.requestWindow({width:240,height:135});
       pipWindow.document.title='YouTube — Gọn';
       const style=pipWindow.document.createElement('style');
       style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
