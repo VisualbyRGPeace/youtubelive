@@ -72,9 +72,15 @@ function updateTimeline(currentTime,duration){
   const timeText=formatTime(current);
   if(timeText!==lastTimeText){lastTimeText=timeText;currentTimeLabel.textContent=timeText;}
 }
+function applyLockToSurface(){
+  const pointerEvents=playerLocked?'none':'';
+  if(pipFrame)pipFrame.style.pointerEvents=pointerEvents;
+  if(inlineFrame)inlineFrame.style.pointerEvents=pointerEvents;
+}
 function setPlayerLocked(value){
   playerLocked=Boolean(value);
   updateLockButtons();
+  applyLockToSurface();
   sendPlayerCommand('setLocked',[playerLocked]);
 }
 function applyTransparency(value){
@@ -214,6 +220,7 @@ async function openPictureInPicture(){
     }
     pipFrame=pipWindow.document.createElement('iframe');
     pipFrame.title='YouTube video';
+    pipFrame.style.pointerEvents=playerLocked?'none':'';
     pipFrame.referrerPolicy='strict-origin-when-cross-origin';
     pipFrame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
     pipFrame.src=makePlayerUrl(activeVideo);
@@ -285,6 +292,7 @@ function startVideo(value){
 function startInline(){
   inlineActive=true;playerView.hidden=true;
   inlineFrame.src=makePlayerUrl(activeVideo);
+  applyLockToSurface();
   applyTransparency(transparencySlider.value);
   inlinePlayer.hidden=false;setupMediaSession();
 }
