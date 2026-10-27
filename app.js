@@ -5,10 +5,27 @@ const playerView=document.querySelector('#player-view');
 const statusText=document.querySelector('#status');
 const pipStatus=document.querySelector('#pip-status');
 const pipButton=document.querySelector('#pip-button');
+const transparencySlider=document.querySelector('#transparency-slider');
+const transparencyValue=document.querySelector('#transparency-value');
 const inlinePlayer=document.querySelector('#inline-player');
 const inlineFrame=document.querySelector('#inline-frame');
 const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
 let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false;
+
+function applyTransparency(value){
+  const percent=Number(value);
+  const opacity=String(1-percent/100);
+  transparencyValue.textContent=percent+'%';
+  if(pipFrame)pipFrame.style.opacity=opacity;
+  if(inlineFrame)inlineFrame.style.opacity=opacity;
+  try{localStorage.setItem('gon-video-transparency',String(percent));}catch{}
+}
+try{
+  const saved=localStorage.getItem('gon-video-transparency');
+  if(saved!==null&&Number.isFinite(Number(saved)))transparencySlider.value=saved;
+}catch{}
+transparencySlider.addEventListener('input',()=>applyTransparency(transparencySlider.value));
+applyTransparency(transparencySlider.value);
 
 function getVideo(value){
   const text=value.trim();
@@ -79,7 +96,7 @@ async function openPictureInPicture(){
   }
   try{
     if(!pipWindow||pipWindow.closed){
-      pipWindow=await window.documentPictureInPicture.requestWindow({width:240,height:135});
+      pipWindow=await window.documentPictureInPicture.requestWindow({width:240,height:135,disallowReturnToOpener:true});
       pipWindow.document.title='YouTube — Gọn';
       const style=pipWindow.document.createElement('style');
       style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
@@ -96,6 +113,7 @@ async function openPictureInPicture(){
     pipFrame.referrerPolicy='strict-origin-when-cross-origin';
     pipFrame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
     pipFrame.src=makePlayerUrl(activeVideo);
+    applyTransparency(transparencySlider.value);
     pipWindow.document.body.replaceChildren(pipFrame);
     pipStatus.textContent='Video đang phát trong cửa sổ nổi. Bạn có thể di chuyển hoặc đổi kích thước cửa sổ.';
     setupMediaSession();
@@ -128,6 +146,7 @@ function startInline(){
   inlineActive=true;
   playerView.hidden=true;
   inlineFrame.src=makePlayerUrl(activeVideo);
+  applyTransparency(transparencySlider.value);
   inlinePlayer.hidden=false;
   setupMediaSession();
 }
