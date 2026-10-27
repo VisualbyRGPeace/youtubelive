@@ -1,9 +1,9 @@
-const CACHE_NAME='gon-youtube-v7';
+const CACHE_NAME='gon-youtube-v8';
 const APP_FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg','./player.html'];
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{
   const cache=await caches.open(CACHE_NAME);
-  await cache.addAll(APP_FILES);
+  await Promise.all(APP_FILES.map(file=>cache.add(new Request(file,{cache:'reload'}))));
   await self.skipWaiting();
 })()));
 
