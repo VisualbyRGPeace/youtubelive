@@ -9,10 +9,12 @@ const playToggle=document.querySelector('#play-toggle');
 const previousButton=document.querySelector('#previous-button');
 const nextButton=document.querySelector('#next-button');
 const volumeSlider=document.querySelector('#volume-slider');
+const volumeIcon=document.querySelector('#volume-icon');
 const seekSlider=document.querySelector('#seek-slider');
 const currentTimeLabel=document.querySelector('#current-time');
 const durationLabel=document.querySelector('#duration');
 const lockToggle=document.querySelector('#lock-toggle');
+const lockLabel=document.querySelector('#lock-label');
 const inlineLock=document.querySelector('#inline-lock');
 const transparencySlider=document.querySelector('#transparency-slider');
 const transparencyValue=document.querySelector('#transparency-value');
@@ -20,22 +22,56 @@ const inlinePlayer=document.querySelector('#inline-player');
 const inlineFrame=document.querySelector('#inline-frame');
 const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
 let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false,playerLocked=false,isPlaying=true,isSeeking=false,videoDuration=0;
+let seekHoldUntil=0,previewTimer=0,pendingPreview=null,lastSid='',lastSeq=0,lastTimeText='',lastDurationText='';
+
+/* ---------- Tiện ích giao diện ---------- */
+function setIcon(element,name){element.querySelector('use')?.setAttribute('href','#i-'+name);}
+function setFill(input){
+  const min=Number(input.min)||0,max=Number(input.max)||100;
+  input.style.setProperty('--p',((Number(input.value)-min)/(max-min)*100)+'%');
+}
+function setText(element,text){if(element.textContent!==text)element.textContent=text;}
 
 function updateLockButtons(){
   const label=playerLocked?'Mở khóa thao tác':'Khóa thao tác';
-  lockToggle.textContent=playerLocked?'Mở khóa cửa sổ nổi':'Khóa thao tác trong cửa sổ nổi';
+  setText(lockLabel,playerLocked?'Mở khóa cửa sổ nổi':'Khóa thao tác trong cửa sổ nổi');
+  setIcon(lockToggle,playerLocked?'unlock':'lock');
   lockToggle.setAttribute('aria-pressed',String(playerLocked));
-  inlineLock.textContent=playerLocked?'Mở khóa':'Khóa';
+  setIcon(inlineLock,playerLocked?'unlock':'lock');
+  inlineLock.title=label;inlineLock.setAttribute('aria-label',label);
   inlineLock.setAttribute('aria-pressed',String(playerLocked));
 }
+function updateVolumeIcon(){
+  const value=Number(volumeSlider.value);
+  setIcon(volumeIcon,value===0?'vol-mute':value<50?'vol-low':'vol-high');
+  setFill(volumeSlider);
+}
+function updatePlayButton(){
+  setIcon(playToggle,isPlaying?'pause':'play');
+  playToggle.title=isPlaying?'Tạm dừng':'Tiếp tục';
+  playToggle.setAttribute('aria-label',isPlaying?'Tạm dừng':'Tiếp tục');
+}
+function formatTime(seconds){if(!Number.isFinite(seconds)||seconds<0)return'0:00';const total=Math.floor(seconds);const mins=Math.floor(total/60);const secs=String(total%60).padStart(2,'0');return mins>=60?Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')+':'+secs:mins+':'+secs;}
+
+/* ---------- Điều khiển trình phát ---------- */
 function sendPlayerCommand(command,args=[]){
   const frame=pipFrame||(inlineActive?inlineFrame:null);
   if(frame?.contentWindow)frame.contentWindow.postMessage({type:'gon-command',func:command,args},location.origin);
 }
-function updatePlayButton(){playToggle.textContent=isPlaying?'Ⅱ':'▶';playToggle.title=isPlaying?'Tạm dừng':'Tiếp tục';playToggle.setAttribute('aria-label',isPlaying?'Tạm dừng':'Tiếp tục');}
 function setPlaying(value){isPlaying=Boolean(value);updatePlayButton();if('mediaSession'in navigator)navigator.mediaSession.playbackState=isPlaying?'playing':'paused';sendPlayerCommand(isPlaying?'playVideo':'pauseVideo');}
-function formatTime(seconds){if(!Number.isFinite(seconds)||seconds<0)return'0:00';const total=Math.floor(seconds);const mins=Math.floor(total/60);const secs=String(total%60).padStart(2,'0');return mins>=60?Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')+':'+secs:mins+':'+secs;}
-function updateTimeline(currentTime,duration){videoDuration=Number(duration)||0;durationLabel.textContent=videoDuration>0?formatTime(videoDuration):'--:--';seekSlider.disabled=videoDuration<=0;if(!isSeeking){const current=Math.max(0,Number(currentTime)||0);seekSlider.value=videoDuration>0?String(Math.round(current/videoDuration*1000)):0;currentTimeLabel.textContent=formatTime(current);}}
+function updateTimeline(currentTime,duration){
+  videoDuration=Number(duration)||0;
+  const durationText=videoDuration>0?formatTime(videoDuration):'--:--';
+  if(durationText!==lastDurationText){lastDurationText=durationText;durationLabel.textContent=durationText;}
+  const noDuration=videoDuration<=0;
+  if(seekSlider.disabled!==noDuration)seekSlider.disabled=noDuration;
+  if(isSeeking||performance.now()<seekHoldUntil)return;
+  const current=Math.max(0,Number(currentTime)||0);
+  const value=videoDuration>0?String(Math.round(current/videoDuration*1000)):'0';
+  if(seekSlider.value!==value){seekSlider.value=value;setFill(seekSlider);}
+  const timeText=formatTime(current);
+  if(timeText!==lastTimeText){lastTimeText=timeText;currentTimeLabel.textContent=timeText;}
+}
 function setPlayerLocked(value){
   playerLocked=Boolean(value);
   updateLockButtons();
@@ -45,18 +81,20 @@ function applyTransparency(value){
   const percent=Number(value);
   const opacity=String(1-percent/100);
   transparencyValue.textContent=percent+'%';
+  setFill(transparencySlider);
   if(pipFrame)pipFrame.style.opacity=opacity;
   if(inlineFrame)inlineFrame.style.opacity=opacity;
-  try{localStorage.setItem('gon-video-transparency',String(percent));}catch{}
 }
 try{
   const saved=localStorage.getItem('gon-video-transparency');
   if(saved!==null&&Number.isFinite(Number(saved)))transparencySlider.value=saved;
 }catch{}
 transparencySlider.addEventListener('input',()=>applyTransparency(transparencySlider.value));
+transparencySlider.addEventListener('change',()=>{try{localStorage.setItem('gon-video-transparency',transparencySlider.value);}catch{}});
 applyTransparency(transparencySlider.value);
-updateLockButtons();
+updateLockButtons();updatePlayButton();updateVolumeIcon();setFill(seekSlider);
 
+/* ---------- Đọc link YouTube ---------- */
 function videoFromUrl(url){
   const host=url.hostname.toLowerCase().replace(/^www\./,'');
   const isYoutube=['youtube.com','youtube-nocookie.com'].some(domain=>host===domain||host.endsWith('.'+domain));
@@ -121,16 +159,28 @@ function setupMediaSession(){
     navigator.mediaSession.setActionHandler('stop',()=>setPlaying(false));
   }catch{}
 }
+
+/* ---------- Nhận trạng thái từ player.html ---------- */
 function receivePlayerState(event){
   const data=event.data;
   if(data?.type!=='gon-player-state')return;
-  playerLocked=Boolean(data.locked);
-  updateLockButtons();
+  // player.html gửi cùng một tin tới 2 nơi; bỏ qua bản trùng để khỏi xử lý hai lần
+  if(data.sid){
+    if(data.sid!==lastSid){lastSid=data.sid;lastSeq=0;}
+    if(data.seq<=lastSeq)return;
+    lastSeq=data.seq;
+  }
+  if(playerLocked!==Boolean(data.locked)){playerLocked=Boolean(data.locked);updateLockButtons();}
   if(Number.isFinite(Number(data.duration)))updateTimeline(data.currentTime,data.duration);
-  if(data.state===1){isPlaying=true;updatePlayButton();if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';}
-  else if(data.state===2||data.state===0||data.autoplayBlocked){isPlaying=false;updatePlayButton();if('mediaSession'in navigator)navigator.mediaSession.playbackState='paused';}
-  if(data.autoplayBlocked)pipStatus.textContent='Trình duyệt đã chặn tự phát. Bấm Tiếp tục trên trang chính để phát video.';
-  else if(data.error)pipStatus.textContent='Video không cho phép phát nhúng hoặc đã xảy ra lỗi YouTube ('+data.error+').';
+  if(data.state===1){
+    if(!isPlaying){isPlaying=true;updatePlayButton();}
+    if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';
+  }else if(data.state===2||data.state===0||data.autoplayBlocked){
+    if(isPlaying){isPlaying=false;updatePlayButton();}
+    if('mediaSession'in navigator)navigator.mediaSession.playbackState='paused';
+  }
+  if(data.autoplayBlocked)setText(pipStatus,'Trình duyệt đã chặn tự phát. Bấm Tiếp tục trên trang chính để phát video.');
+  else if(data.error)setText(pipStatus,'Video không cho phép phát nhúng hoặc đã xảy ra lỗi YouTube ('+data.error+').');
 }
 window.addEventListener('message',event=>{
   if(event.source===inlineFrame.contentWindow||event.source===pipFrame?.contentWindow)receivePlayerState(event);
@@ -140,6 +190,8 @@ function attachPipMessages(){
     if(event.source===pipFrame?.contentWindow)receivePlayerState(event);
   });
 }
+
+/* ---------- Cửa sổ nổi ---------- */
 async function openPictureInPicture(){
   if(!activeVideo)return;
   if(!('documentPictureInPicture'in window)){
@@ -180,21 +232,52 @@ pipButton.addEventListener('click',openPictureInPicture);
 playToggle.addEventListener('click',()=>setPlaying(!isPlaying));
 previousButton.addEventListener('click',()=>sendPlayerCommand('previousVideo'));
 nextButton.addEventListener('click',()=>sendPlayerCommand('nextVideo'));
-volumeSlider.addEventListener('input',()=>sendPlayerCommand('setVolume',[Number(volumeSlider.value)]));
+volumeSlider.addEventListener('input',()=>{updateVolumeIcon();sendPlayerCommand('setVolume',[Number(volumeSlider.value)]);});
+
+/* ---------- Thanh tua ---------- */
+function queuePreview(time){
+  // gộp các lần kéo thanh trượt, tối đa ~8 lệnh/giây để video không bị giật
+  pendingPreview=time;
+  if(previewTimer)return;
+  previewTimer=setTimeout(()=>{
+    previewTimer=0;
+    if(pendingPreview!==null){sendPlayerCommand('seekToPreview',[pendingPreview]);pendingPreview=null;}
+  },120);
+}
+function endSeeking(){isSeeking=false;}
 seekSlider.addEventListener('pointerdown',()=>{isSeeking=true;});
 seekSlider.addEventListener('keydown',()=>{isSeeking=true;});
-seekSlider.addEventListener('input',()=>{if(videoDuration>0){const preview=Number(seekSlider.value)/1000*videoDuration;currentTimeLabel.textContent=formatTime(preview);sendPlayerCommand('seekToPreview',[preview]);}});
-seekSlider.addEventListener('change',()=>{if(videoDuration>0)sendPlayerCommand('seekTo',[Number(seekSlider.value)/1000*videoDuration]);isSeeking=false;});
+seekSlider.addEventListener('keyup',endSeeking);
+window.addEventListener('pointerup',endSeeking);
+window.addEventListener('pointercancel',endSeeking);
+seekSlider.addEventListener('input',()=>{
+  setFill(seekSlider);
+  if(videoDuration>0){
+    const preview=Number(seekSlider.value)/1000*videoDuration;
+    currentTimeLabel.textContent=lastTimeText=formatTime(preview);
+    queuePreview(preview);
+  }
+});
+seekSlider.addEventListener('change',()=>{
+  if(previewTimer){clearTimeout(previewTimer);previewTimer=0;}
+  pendingPreview=null;
+  if(videoDuration>0){
+    sendPlayerCommand('seekTo',[Number(seekSlider.value)/1000*videoDuration]);
+    seekHoldUntil=performance.now()+700; // chờ YouTube tua xong để thanh không nhảy lại vị trí cũ
+  }
+  isSeeking=false;
+});
 lockToggle.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 
+/* ---------- Bắt đầu / dừng ---------- */
 function startVideo(value){
   const video=getVideo(value);
   if(!video){statusText.textContent='Không nhận ra link hoặc mã nhúng YouTube. Hãy dán nguyên mã iframe từ YouTube.';return;}
   activeVideo=video;
   document.querySelector('#track-title').textContent=video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=true;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=true;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
