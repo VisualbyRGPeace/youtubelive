@@ -29,7 +29,9 @@ body.locked #youtube-player iframe{pointer-events:none}
       duration=player.getDuration()||0;
       state=player.getPlayerState();
     }catch{}
-    window.parent.postMessage({type:'gon-player-state',locked,currentTime,duration,state,...extra},location.origin);
+    const message={type:'gon-player-state',locked,currentTime,duration,state,...extra};
+    window.parent.postMessage(message,location.origin);
+    try{window.parent.opener?.postMessage(message,location.origin);}catch{}
   }
   function applyCommand(func,args=[]){
     if(func==='setLocked'){
@@ -40,6 +42,7 @@ body.locked #youtube-player iframe{pointer-events:none}
     }
     if(!ready){queued.push([func,args]);return;}
     if(func==='seekTo')player.seekTo(Number(args[0])||0,true);
+    else if(func==='seekToPreview')player.seekTo(Number(args[0])||0,false);
     else if(func==='setVolume')player.setVolume(Math.max(0,Math.min(100,Number(args[0])||0)));
     else if(['playVideo','pauseVideo','stopVideo','nextVideo','previousVideo','mute','unMute'].includes(func)&&typeof player[func]==='function')player[func]();
     sendState();
