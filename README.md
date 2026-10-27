@@ -5,7 +5,7 @@ Trình phát YouTube tiếng Việt. Dán liên kết video để mở video tro
 ## Dùng thử
 
 1. Mở trang GitHub Pages bằng Chrome hoặc Edge trên máy tính.
-2. Dán liên kết YouTube vào ô nhập. App sẽ thử mở cửa sổ nổi và phát video ngay.
+2. Dán link YouTube hoặc toàn bộ mã `<iframe>` vào ô nhập. App sẽ thử mở cửa sổ nổi và phát video ngay.
 3. Nếu trình duyệt chặn việc mở tự động, chọn **Cửa sổ nổi**. Đóng cửa sổ nổi để đưa video về trang.
 4. Có thể cài ứng dụng từ trình duyệt rồi ghim vào taskbar.
 
