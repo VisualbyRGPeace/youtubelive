@@ -132,7 +132,7 @@ function videoFromUrl(url){
     const list=url.searchParams.get('list')||'';
     if(!id&&!list)return null;
     const embedUrl=new URL(id?'/embed/'+id:'/embed/videoseries','https://www.youtube.com');copyParams(embedUrl);
-    return {id,list,embedUrl};
+    return {platform:'youtube',id,list,embedUrl};
   }
   const match=url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/);
   if(!match)return null;
@@ -214,7 +214,7 @@ async function openPictureInPicture(){
   }
   try{
     if(!pipWindow||pipWindow.closed){
-      pipWindow=await window.documentPictureInPicture.requestWindow({width:360,height:220,disallowReturnToOpener:true});
+      pipWindow=await window.documentPictureInPicture.requestWindow({width:activeVideo.platform==='tiktok'?240:360,height:activeVideo.platform==='tiktok'?426:220,disallowReturnToOpener:true});
       pipWindow.document.title='Video — Gọn';
       const style=pipWindow.document.createElement('style');
       style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
