@@ -150,8 +150,10 @@ body.locked #youtube-player iframe{pointer-events:none}
     let state={currentTime:0,playing:true,volume:80,videoId:currentVideoId,playlistIndex:-1};
     try{
       state.currentTime=player.getCurrentTime()||0;
-      state.playing=player.getPlayerState()===1;
+      const playerState=player.getPlayerState();
+      state.playing=playerState!==2&&playerState!==0;
       state.volume=player.getVolume();
+      state.muted=player.isMuted();
       state.videoId=new URL(player.getVideoUrl()).searchParams.get('v')||currentVideoId;
       state.playlistIndex=player.getPlaylistIndex();
       preferredPlaybackRate=player.getPlaybackRate()||preferredPlaybackRate;
@@ -179,6 +181,7 @@ body.locked #youtube-player iframe{pointer-events:none}
         player=event.target;ready=true;
         const restoreState=resumeState;resumeState=null;
         player.setVolume(restoreState?restoreState.volume:80);
+        if(restoreState?.muted)player.mute();
         const pending=queued.splice(0);
         const captionCommands=pending.filter(([func])=>func==='setCaptions');
         const otherCommands=pending.filter(([func])=>func!=='setCaptions');
