@@ -5,7 +5,10 @@ const playerView=document.querySelector('#player-view');
 const statusText=document.querySelector('#status');
 const pipStatus=document.querySelector('#pip-status');
 const pipButton=document.querySelector('#pip-button');
-let activeVideo=null,pipWindow=null,pipFrame=null;
+const inlinePlayer=document.querySelector('#inline-player');
+const inlineFrame=document.querySelector('#inline-frame');
+const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
+let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false;
 
 function getVideo(value){
   const text=value.trim();
@@ -48,8 +51,9 @@ function makePlayerUrl(video){
 }
 
 function sendPlayerCommand(command){
-  if(!pipFrame?.contentWindow)return;
-  pipFrame.contentWindow.postMessage({type:'gon-command',func:command},location.origin);
+  const frame=pipFrame||(inlineActive?inlineFrame:null);
+  if(!frame?.contentWindow)return;
+  frame.contentWindow.postMessage({type:'gon-command',func:command},location.origin);
 }
 
 function setupMediaSession(){
@@ -115,9 +119,27 @@ function startVideo(value){
   document.querySelector('#track-title').textContent='YouTube video';
   document.querySelector('#track-author').textContent='Cửa sổ nổi';
   welcome.hidden=true;
+  if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
 }
+
+function startInline(){
+  inlineActive=true;
+  playerView.hidden=true;
+  inlineFrame.src=makePlayerUrl(activeVideo);
+  inlinePlayer.hidden=false;
+  setupMediaSession();
+}
+
+function stopInline(){
+  inlineActive=false;
+  inlineFrame.src='about:blank';
+  inlinePlayer.hidden=true;
+  welcome.hidden=false;
+  urlInput.focus();
+}
+document.querySelector('#inline-back').addEventListener('click',stopInline);
 
 loadForm.addEventListener('submit',event=>{
   event.preventDefault();
