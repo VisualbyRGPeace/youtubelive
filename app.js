@@ -5,12 +5,15 @@ const playerView=document.querySelector('#player-view');
 const statusText=document.querySelector('#status');
 const pipStatus=document.querySelector('#pip-status');
 const pipButton=document.querySelector('#pip-button');
+const lockToggle=document.querySelector('#lock-toggle');
 const transparencySlider=document.querySelector('#transparency-slider');
 const transparencyValue=document.querySelector('#transparency-value');
 const inlinePlayer=document.querySelector('#inline-player');
 const inlineFrame=document.querySelector('#inline-frame');
 const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
-let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false;
+let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false,playerLocked=false;
+function updateLockToggle(){lockToggle.textContent=playerLocked?'Mở khóa thao tác trong cửa sổ nổi':'Khóa thao tác trong cửa sổ nổi';lockToggle.setAttribute('aria-pressed',String(playerLocked));}
+function setPlayerLocked(value){playerLocked=Boolean(value);updateLockToggle();if(pipFrame||inlineActive)sendPlayerCommand('setLocked',[playerLocked]);}
 
 function applyTransparency(value){
   const percent=Number(value);
@@ -48,7 +51,7 @@ function getVideo(value){
         const id=url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/)?.[1];
         if(id){
           const embedUrl=new URL('/embed/'+id,'https://www.youtube.com');
-          for(const [key,val] of url.searchParams)if(key==='start'||key==='end'||key==='si')embedUrl.searchParams.set(key,val);
+          for(const [key,val] of url.searchParams)if(['start','end','si','list','index'].includes(key))embedUrl.searchParams.set(key,val);
           return {id,embedUrl};
         }
       }
@@ -59,18 +62,19 @@ function getVideo(value){
 
 function makePlayerUrl(video){
   const url=new URL('player.html',location.href);
-  url.searchParams.set('v',video.id);
-  for(const key of ['start','end','si']){
+  if(video.id)url.searchParams.set('v',video.id);
+  if(video.list)url.searchParams.set('list',video.list);
+  for(const key of ['start','end','si','list','index']){
     const val=video.embedUrl.searchParams.get(key);
     if(val)url.searchParams.set(key,val);
   }
   return url.toString();
 }
 
-function sendPlayerCommand(command){
+function sendPlayerCommand(command,args=[]){
   const frame=pipFrame||(inlineActive?inlineFrame:null);
   if(!frame?.contentWindow)return;
-  frame.contentWindow.postMessage({type:'gon-command',func:command},location.origin);
+  frame.contentWindow.postMessage({type:'gon-command',func:command,args},location.origin);
 }
 
 function setupMediaSession(){
@@ -106,6 +110,7 @@ async function openPictureInPicture(){
         pipFrame=null;
         pipStatus.textContent='Cửa sổ nổi đã đóng. Dán link khác hoặc mở lại video.';
         if('mediaSession'in navigator)navigator.mediaSession.playbackState='paused';
+        playerLocked=false;updateLockToggle();
       });
     }
     pipFrame=pipWindow.document.createElement('iframe');
@@ -126,6 +131,12 @@ if(!('documentPictureInPicture'in window)){
   pipButton.title='Cửa sổ nổi cần Chrome hoặc Edge trên máy tính';
 }
 pipButton.addEventListener('click',openPictureInPicture);
+lockToggle.addEventListener('click',()=>setPlayerLocked(!playerLocked));
+window.addEventListener('message',event=>{
+  if(event.source===inlineFrame.contentWindow&&event.data?.type==='gon-player-state'){
+    playerLocked=Boolean(event.data.locked);updateLockToggle();
+  }
+});
 
 function startVideo(value){
   const video=getVideo(value);
