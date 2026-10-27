@@ -37,3 +37,13 @@ Ghi chú: độ trong suốt làm mờ nội dung về nền đen (giống phầ
 Từ phiên bản 1.1.0, tiện ích còn giữ video TikTok **tiếp tục phát** khi cửa sổ TikTok bị che, bị thu nhỏ hoặc bạn chuyển sang tab/cửa sổ khác (TikTok vốn tự dừng khi trình duyệt báo trang bị ẩn). Sau khi cập nhật, vào `chrome://extensions` bấm **Tải lại** cho tiện ích rồi mở lại cửa sổ TikTok.
 
 Thanh tiêu đề của cửa sổ popup (biểu tượng + nút thu nhỏ/phóng to/đóng) do trình duyệt vẽ nên web hoặc tiện ích không gỡ được; đây đã là dạng tối giản nhất.
+
+## Ghim TikTok luôn trên cùng (tiện ích v1.3.0)
+
+1. Cài tiện ích trong `tiktok-overlay-extension` (xem phần trên) và bấm **Tải lại** sau mỗi lần cập nhật.
+2. Bấm **Mở TikTok để lướt** trên Gọn. Một cửa sổ nhỏ mở ra (trang `tiktok.com/robots.txt`) với nút **📌 Ghim TikTok**.
+3. Bấm nút đó: TikTok mở trong cửa sổ nổi (Picture-in-Picture) **luôn nằm trên cùng**, không có thanh địa chỉ, giống cửa sổ YouTube.
+4. Trong cửa sổ nổi, bấm **◐** ở góc trên bên phải để chỉnh **Thu nhỏ màn hình** và **Độ trong suốt**.
+5. Thu nhỏ (đừng đóng) cửa sổ nhỏ ban đầu: cửa sổ nổi sẽ đóng theo nếu nó bị đóng.
+
+Cửa sổ nổi thuộc cùng domain tiktok.com nên TikTok cho phép nhúng và giữ đăng nhập. Nút **TikTok popup** vẫn mở cửa sổ TikTok thường (không ghim được).

@@ -156,6 +156,10 @@ function openTikTokBrowseWindow(){
 }
 document.querySelector('#open-tiktok').addEventListener('click',event=>{
   event.preventDefault();
+  openTikTokFeed();
+});
+document.querySelector('#open-tiktok-popup').addEventListener('click',event=>{
+  event.preventDefault();
   openTikTokBrowseWindow();
 });
 
@@ -218,6 +222,7 @@ function getVideo(value){
 }
 function getPreferredPlaybackRate(){try{const rate=Number(localStorage.getItem('gon-youtube-playback-rate'));return Number.isFinite(rate)&&rate>0?rate:1;}catch{return 1;}}
 function makePlayerUrl(video){
+  if(video.platform==='tiktok-home')return 'https://www.tiktok.com/';
   const url=new URL('player.html',location.href);
   url.searchParams.set('platform',video.platform||'youtube');
   if((video.platform||'youtube')==='youtube'){
@@ -234,7 +239,7 @@ function makePlayerUrl(video){
   return url.toString();
 }
 function setupMediaSession(){
-  if(!('mediaSession'in navigator)||!activeVideo||activeVideo.platform==='tiktok-profile')return;
+  if(!('mediaSession'in navigator)||!activeVideo||activeVideo.platform==='tiktok-profile'||activeVideo.platform==='tiktok-home')return;
   try{
     const metadata={title:(activeVideo.platform==='tiktok'?'TikTok':'YouTube')+' video',artist:activeVideo.platform==='tiktok'?'TikTok':'YouTube'};
     if(activeVideo.platform!=='tiktok'&&activeVideo.id)metadata.artwork=[{src:'https://i.ytimg.com/vi/'+activeVideo.id+'/hqdefault.jpg',sizes:'480x360',type:'image/jpeg'}];
@@ -287,7 +292,7 @@ async function openPictureInPicture(){
   }
   try{
     if(!pipWindow||pipWindow.closed){
-      pipWindow=await window.documentPictureInPicture.requestWindow({width:activeVideo.platform==='tiktok'?240:activeVideo.platform==='tiktok-profile'?320:360,height:activeVideo.platform==='tiktok'?426:activeVideo.platform==='tiktok-profile'?560:220,disallowReturnToOpener:true});
+      pipWindow=await window.documentPictureInPicture.requestWindow({width:activeVideo.platform==='tiktok'?240:activeVideo.platform==='tiktok-profile'?320:activeVideo.platform==='tiktok-home'?360:360,height:activeVideo.platform==='tiktok'?426:activeVideo.platform==='tiktok-profile'?560:activeVideo.platform==='tiktok-home'?640:220,disallowReturnToOpener:true});
       pipWindow.document.title='Video — Gọn';
       const style=pipWindow.document.createElement('style');
       style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
@@ -300,15 +305,15 @@ async function openPictureInPicture(){
       });
     }
     pipFrame=pipWindow.document.createElement('iframe');
-    pipFrame.title=(activeVideo.platform==='tiktok'?'TikTok':'YouTube')+' video';
+    pipFrame.title=(activeVideo.platform.startsWith('tiktok')?'TikTok':'YouTube')+' video';
     pipFrame.style.pointerEvents=playerLocked?'none':'';
     pipFrame.referrerPolicy='strict-origin-when-cross-origin';
-    pipFrame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
+    pipFrame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture; web-share';
     pipFrame.src=makePlayerUrl(activeVideo);
     pipWindow.document.body.replaceChildren(pipFrame);
     applyTransparency(transparencySlider.value);
     applyScale();
-    pipStatus.textContent=activeVideo.platform==='tiktok-profile'?'Hồ sơ TikTok đã mở. Cuộn ngang qua các video của creator.':activeVideo.platform==='tiktok'?'TikTok đang phát trong cửa sổ nổi. Video liên quan có thể xuất hiện khi clip kết thúc.':activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
+    pipStatus.textContent=activeVideo.platform==='tiktok-home'?'Đang tải bảng tin TikTok. Nếu cửa sổ trống hoặc báo từ chối kết nối, hãy cài/tải lại tiện ích Gọn (thư mục tiktok-overlay-extension) hoặc dùng nút TikTok popup.':activeVideo.platform==='tiktok-profile'?'Hồ sơ TikTok đã mở. Cuộn ngang qua các video của creator.':activeVideo.platform==='tiktok'?'TikTok đang phát trong cửa sổ nổi. Video liên quan có thể xuất hiện khi clip kết thúc.':activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
     updateLockButtons();
     if(playerLocked)sendPlayerCommand('setLocked',[true]);
     setupMediaSession();
@@ -371,14 +376,24 @@ inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 function startVideo(value){
   const video=getVideo(value);
   if(!video&&isTikTokHome(value)){
-    openTikTokBrowseWindow();
+    openTikTokFeed();
     return;
   }
   if(!video){statusText.textContent='Không nhận ra link. Dùng link YouTube hoặc link TikTok đầy đủ dạng tiktok.com/@ten/video/... hay tiktok.com/@ten.';return;}
+  beginVideo(video);
+}
+/* Bảng tin TikTok trong cửa sổ nổi (cần tiện ích Gọn để gỡ chặn nhúng của TikTok) */
+function openTikTokFeed(){
+  // Mở trang bệ phóng nhỏ của tiện ích; bấm "Ghim TikTok" ở đó để có cửa sổ nổi luôn trên cùng
+  const popup=window.open('https://www.tiktok.com/robots.txt','_blank','popup=yes,width=340,height=190,resizable=yes');
+  if(popup){try{popup.focus();}catch{}setText(statusText,'Đã mở cửa sổ ghim. Bấm nút "Ghim TikTok" trong đó (cần cài tiện ích Gọn).');return;}
+  setText(statusText,'Trình duyệt đã chặn cửa sổ bật lên. Hãy cho phép pop-up cho trang này rồi thử lại.');
+}
+function beginVideo(video){
   activeVideo=video;
-  const isTikTokProfile=video.platform==='tiktok-profile';
-  document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
-  document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
+  const isTikTokProfile=video.platform==='tiktok-profile'||video.platform==='tiktok-home';
+  document.querySelector('#track-title').textContent=video.platform==='tiktok-home'?'TikTok':video.platform==='tiktok-profile'?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
+  document.querySelector('#track-author').textContent=video.platform==='tiktok-home'?'Lướt bảng tin trong cửa sổ nổi':video.platform==='tiktok-profile'?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
   playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';scaleControl.hidden=!video.platform.startsWith('tiktok');speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;

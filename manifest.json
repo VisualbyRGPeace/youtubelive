@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Gọn — TikTok thu nhỏ & độ trong suốt",
-  "version": "1.1.0",
-  "description": "Thu nhỏ, chỉnh độ trong suốt và giữ video TikTok tiếp tục phát khi cửa sổ bị che hoặc mở tab khác.",
+  "version": "1.3.0",
+  "description": "Ghim TikTok vào cửa sổ nổi luôn trên cùng, thu nhỏ, chỉnh độ trong suốt và giữ video chạy khi mở tab khác.",
   "background": {
     "service_worker": "background.js"
   },
@@ -16,7 +16,8 @@
         "keepalive.js"
       ],
       "run_at": "document_start",
-      "world": "MAIN"
+      "world": "MAIN",
+      "all_frames": true
     },
     {
       "matches": [
@@ -26,10 +27,35 @@
       "js": [
         "content.js"
       ],
+      "run_at": "document_idle",
+      "exclude_matches": [
+        "https://www.tiktok.com/robots.txt*"
+      ]
+    },
+    {
+      "matches": [
+        "https://www.tiktok.com/robots.txt*"
+      ],
+      "js": [
+        "pin.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "permissions": [
-    "storage"
-  ]
+    "storage",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "https://*.tiktok.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "allow_embed",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
 }
