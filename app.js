@@ -110,8 +110,8 @@ function setupMediaSession(){
     if(activeVideo.id)metadata.artwork=[{src:'https://i.ytimg.com/vi/'+activeVideo.id+'/hqdefault.jpg',sizes:'480x360',type:'image/jpeg'}];
     navigator.mediaSession.metadata=new MediaMetadata(metadata);
     navigator.mediaSession.playbackState='playing';
-    navigator.mediaSession.setActionHandler('play',()=>sendPlayerCommand('playVideo'));
-    navigator.mediaSession.setActionHandler('pause',()=>sendPlayerCommand('pauseVideo'));
+    navigator.mediaSession.setActionHandler('play',()=>setPlaying(true));
+    navigator.mediaSession.setActionHandler('pause',()=>setPlaying(false));
     navigator.mediaSession.setActionHandler('stop',()=>sendPlayerCommand('pauseVideo'));
   }catch{}
 }
