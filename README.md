@@ -1,12 +1,12 @@
 # Gọn — YouTube Picture-in-Picture
 
-Trình phát YouTube web tiếng Việt, có nút đưa video vào cửa sổ nổi luôn trên các ứng dụng khác.
+Trình phát YouTube tiếng Việt. Dán liên kết video để mở video trong cửa sổ nổi Picture-in-Picture; cửa sổ chỉ hiển thị hình ảnh video, không có thanh điều hướng.
 
 ## Dùng thử
 
 1. Mở trang GitHub Pages bằng Chrome hoặc Edge trên máy tính.
-2. Dán liên kết YouTube và chọn **Phát**.
-3. Chọn **Cửa sổ nổi** để tách video ra cửa sổ Picture-in-Picture. Đóng cửa sổ nổi để đưa video trở lại trang.
+2. Dán liên kết YouTube vào ô nhập. App sẽ thử mở cửa sổ nổi và phát video ngay.
+3. Nếu trình duyệt chặn việc mở tự động, chọn **Cửa sổ nổi**. Đóng cửa sổ nổi để đưa video về trang.
 4. Có thể cài ứng dụng từ trình duyệt rồi ghim vào taskbar.
 
 ## Xuất bản
@@ -15,7 +15,7 @@ GitHub Actions xuất bản website từ nhánh `main`. Trong **Settings → Pag
 
 ## Ghi chú
 
-- Cửa sổ nổi dùng Document Picture-in-Picture, hiện cần Chrome hoặc Edge trên máy tính. Cửa sổ do trình duyệt quản lý; người dùng có thể di chuyển và đổi kích thước theo khả năng của trình duyệt.
-- Điều khiển media của Windows tùy vào hỗ trợ Media Session API của trình duyệt.
-- Video phát từ YouTube. Một số video không cho nhúng và sẽ không phát trong app.
-- Ứng dụng không tải hoặc lưu video.
+- Cửa sổ nổi dùng Document Picture-in-Picture, hiện cần Chrome hoặc Edge trên máy tính. Kích thước và khả năng thay đổi kích thước do trình duyệt quản lý; không thể cam kết thu nhỏ đến mọi kích thước tùy ý.
+- Một số video/nhúng YouTube có giới hạn kích thước trình phát và có thể không phát được trong cửa sổ quá nhỏ.
+- Điều khiển media của Windows tùy thuộc vào hỗ trợ Media Session API của trình duyệt.
+- Ứng dụng phát video từ YouTube, không tải hoặc lưu nội dung video.
