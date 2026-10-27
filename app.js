@@ -112,7 +112,7 @@ function setupMediaSession(){
     navigator.mediaSession.playbackState='playing';
     navigator.mediaSession.setActionHandler('play',()=>setPlaying(true));
     navigator.mediaSession.setActionHandler('pause',()=>setPlaying(false));
-    navigator.mediaSession.setActionHandler('stop',()=>sendPlayerCommand('pauseVideo'));
+    navigator.mediaSession.setActionHandler('stop',()=>setPlaying(false));
   }catch{}
 }
 function receivePlayerState(event){
