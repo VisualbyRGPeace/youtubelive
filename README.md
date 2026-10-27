@@ -1,6 +1,6 @@
 # Gọn — YouTube & TikTok mini player
 
-Trình phát gọn nhẹ bằng tiếng Việt. Dán link YouTube, mã nhúng YouTube, link video TikTok hoặc link hồ sơ TikTok để mở trong cửa sổ nổi.
+Trình phát gọn nhẹ bằng tiếng Việt. Dán link video để mở player nổi, hoặc chọn Mở TikTok để lướt trang TikTok trong cửa sổ nhỏ có thể đổi kích thước.
 
 ## Cách dùng
 
@@ -11,6 +11,8 @@ Trình phát gọn nhẹ bằng tiếng Việt. Dán link YouTube, mã nhúng Yo
 5. Dùng thanh trượt để chỉnh độ trong suốt.
 
 ## Ghi chú
+
+- Nút Mở TikTok để lướt mở trang chủ TikTok trong cửa sổ popup dọc 420×760, có thể đổi kích thước. Cửa sổ này hiển thị toàn bộ trang TikTok nhưng không phải cửa sổ luôn nổi.
 
 - Video và hồ sơ TikTok dùng Embed Player/Creator Profile Embed chính thức của TikTok; không cần API key.
 - Thẻ hồ sơ TikTok cho phép cuộn qua các video của creator trên máy tính. Đây không phải bảng tin For You vô hạn.
