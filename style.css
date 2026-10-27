@@ -163,3 +163,11 @@ input[type=range]:disabled::-webkit-slider-thumb{transform:none}
 .speed-control select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .speed-control select:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:600px){.speed-control{order:6;margin:5px 0 0}}
+
+.youtube-options{width:min(100%,460px);margin:10px auto 0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#ffffff06}
+.caption-toggle{display:flex;align-items:center;gap:8px;color:#d8d5cd;font-size:12px;cursor:pointer}
+.caption-toggle input{accent-color:var(--accent);width:15px;height:15px}
+#audio-language-button{border:1px solid var(--line-strong);border-radius:999px;padding:8px 11px;background:var(--surface);color:#d8d5cd;font:600 11px 'DM Sans',sans-serif;cursor:pointer}
+#audio-language-button:hover{background:var(--surface-hover)}
+#audio-language-button:active{transform:scale(.97)}
+@media(max-width:600px){.youtube-options{align-items:flex-start;flex-direction:column}}
