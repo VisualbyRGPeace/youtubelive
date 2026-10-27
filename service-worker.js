@@ -1,4 +1,4 @@
-const CACHE_NAME='gon-youtube-v4';
+const CACHE_NAME='gon-youtube-v5';
 const APP_FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{
