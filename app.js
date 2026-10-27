@@ -5,6 +5,10 @@ const playerView=document.querySelector('#player-view');
 const statusText=document.querySelector('#status');
 const pipStatus=document.querySelector('#pip-status');
 const pipButton=document.querySelector('#pip-button');
+const playToggle=document.querySelector('#play-toggle');
+const previousButton=document.querySelector('#previous-button');
+const nextButton=document.querySelector('#next-button');
+const volumeSlider=document.querySelector('#volume-slider');
 const lockToggle=document.querySelector('#lock-toggle');
 const inlineLock=document.querySelector('#inline-lock');
 const transparencySlider=document.querySelector('#transparency-slider');
@@ -12,7 +16,7 @@ const transparencyValue=document.querySelector('#transparency-value');
 const inlinePlayer=document.querySelector('#inline-player');
 const inlineFrame=document.querySelector('#inline-frame');
 const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
-let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false,playerLocked=false;
+let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false,playerLocked=false,isPlaying=true;
 
 function updateLockButtons(){
   const label=playerLocked?'Mở khóa thao tác':'Khóa thao tác';
@@ -25,6 +29,7 @@ function sendPlayerCommand(command,args=[]){
   const frame=pipFrame||(inlineActive?inlineFrame:null);
   if(frame?.contentWindow)frame.contentWindow.postMessage({type:'gon-command',func:command,args},location.origin);
 }
+function setPlaying(value){isPlaying=Boolean(value);playToggle.textContent=isPlaying?'Ⅱ':'▶';playToggle.title=isPlaying?'Tạm dừng':'Tiếp tục';playToggle.setAttribute('aria-label',isPlaying?'Tạm dừng':'Tiếp tục');if('mediaSession'in navigator)navigator.mediaSession.playbackState=isPlaying?'playing':'paused';sendPlayerCommand(isPlaying?'playVideo':'pauseVideo');}
 function setPlayerLocked(value){
   playerLocked=Boolean(value);
   updateLockButtons();
@@ -150,7 +155,7 @@ async function openPictureInPicture(){
     pipFrame.src=makePlayerUrl(activeVideo);
     applyTransparency(transparencySlider.value);
     pipWindow.document.body.replaceChildren(pipFrame);
-    pipStatus.textContent=activeVideo.list?'Di chuột vào cửa sổ để hiện điều khiển video và âm lượng.':'Video đơn lẻ: nút “Tiếp” cần mã nhúng của playlist.';
+    pipStatus.textContent=activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
     updateLockButtons();
     if(playerLocked)sendPlayerCommand('setLocked',[true]);
     setupMediaSession();
@@ -160,6 +165,10 @@ async function openPictureInPicture(){
 }
 if(!('documentPictureInPicture'in window))pipButton.title='Cửa sổ nổi cần Chrome hoặc Edge trên máy tính';
 pipButton.addEventListener('click',openPictureInPicture);
+playToggle.addEventListener('click',()=>setPlaying(!isPlaying));
+previousButton.addEventListener('click',()=>sendPlayerCommand('previousVideo'));
+nextButton.addEventListener('click',()=>sendPlayerCommand('nextVideo'));
+volumeSlider.addEventListener('input',()=>sendPlayerCommand('setVolume',[Number(volumeSlider.value)]));
 lockToggle.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 
@@ -169,7 +178,7 @@ function startVideo(value){
   activeVideo=video;
   document.querySelector('#track-title').textContent=video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=true;playToggle.textContent='Ⅱ';playToggle.title='Tạm dừng';playToggle.setAttribute('aria-label','Tạm dừng');previousButton.disabled=!video.list;nextButton.disabled=!video.list;updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
