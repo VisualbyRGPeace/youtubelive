@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>YouTube — Gọn</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<script>
+(function(){
+  var params=new URLSearchParams(location.search);
+  var id=params.get('v');
+  if(!id||!/^[\w-]{6,}$/.test(id)){document.body.textContent='Thiếu mã video.';return;}
+  var src=new URL('https://www.youtube.com/embed/'+encodeURIComponent(id));
+  ['start','end','si'].forEach(function(k){if(params.get(k))src.searchParams.set(k,params.get(k));});
+  src.searchParams.set('autoplay','1');
+  src.searchParams.set('controls','0');
+  src.searchParams.set('playsinline','1');
+  src.searchParams.set('rel','0');
+  src.searchParams.set('enablejsapi','1');
+  src.searchParams.set('origin',location.origin);
+  src.searchParams.set('widget_referrer',location.href);
+  var frame=document.createElement('iframe');
+  frame.title='YouTube video';
+  frame.referrerPolicy='strict-origin-when-cross-origin';
+  frame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
+  frame.allowFullscreen=true;
+  frame.src=src.toString();
+  document.body.appendChild(frame);
+  // Nhận lệnh play/pause từ trang chính rồi chuyển cho trình phát YouTube
+  window.addEventListener('message',function(e){
+    if(e.origin!==location.origin||!e.data||e.data.type!=='gon-command')return;
+    frame.contentWindow.postMessage(JSON.stringify({event:'command',func:e.data.func,args:[]}),'https://www.youtube.com');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
-const CACHE_NAME='gon-youtube-v5';
-const APP_FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg'];
+const CACHE_NAME='gon-youtube-v6';
+const APP_FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg','./player.html'];
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{
   const cache=await caches.open(CACHE_NAME);
@@ -16,6 +16,11 @@ self.addEventListener('activate',event=>event.waitUntil((async()=>{
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
   if(event.request.mode==='navigate'){
+    const isPlayer=new URL(event.request.url).pathname.endsWith('/player.html');
+    if(isPlayer){
+      event.respondWith(fetch(event.request).catch(()=>caches.match('./player.html')));
+      return;
+    }
     event.respondWith(fetch(event.request).then(response=>{
       const copy=response.clone();
       caches.open(CACHE_NAME).then(cache=>cache.put('./',copy));

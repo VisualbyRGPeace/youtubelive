@@ -37,21 +37,19 @@ function getVideo(value){
   return null;
 }
 
-function makeEmbedUrl(video){
-  const url=new URL(video.embedUrl);
-  url.searchParams.set('autoplay','1');
-  url.searchParams.set('controls','0');
-  url.searchParams.set('playsinline','1');
-  url.searchParams.set('rel','0');
-  url.searchParams.set('enablejsapi','1');
-  url.searchParams.set('origin',location.origin);
-  url.searchParams.set('widget_referrer',location.href);
+function makePlayerUrl(video){
+  const url=new URL('player.html',location.href);
+  url.searchParams.set('v',video.id);
+  for(const key of ['start','end','si']){
+    const val=video.embedUrl.searchParams.get(key);
+    if(val)url.searchParams.set(key,val);
+  }
   return url.toString();
 }
 
 function sendPlayerCommand(command){
   if(!pipFrame?.contentWindow)return;
-  pipFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:command,args:[]}), 'https://www.youtube.com');
+  pipFrame.contentWindow.postMessage({type:'gon-command',func:command},location.origin);
 }
 
 function setupMediaSession(){
@@ -93,7 +91,7 @@ async function openPictureInPicture(){
     pipFrame.title='YouTube video';
     pipFrame.referrerPolicy='strict-origin-when-cross-origin';
     pipFrame.allow='autoplay; encrypted-media; picture-in-picture; web-share';
-    pipFrame.src=makeEmbedUrl(activeVideo);
+    pipFrame.src=makePlayerUrl(activeVideo);
     pipWindow.document.body.replaceChildren(pipFrame);
     pipStatus.textContent='Video đang phát trong cửa sổ nổi. Bạn có thể di chuyển hoặc đổi kích thước cửa sổ.';
     setupMediaSession();
