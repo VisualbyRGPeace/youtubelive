@@ -17,3 +17,9 @@
 .opacity-control output{color:#c5c1b6;font-variant-numeric:tabular-nums}
 .opacity-control input{display:block;width:100%;margin:13px 0 8px;accent-color:#fb443b;cursor:pointer}
 .opacity-control p{margin:0;color:#85837c;font-size:11px}
+
+.lock-toggle{display:block;margin:14px auto 0;padding:9px 14px;border:1px solid #ffffff24;border-radius:999px;background:#ffffff0a;color:#eae8e2;font:600 12px 'DM Sans',sans-serif;cursor:pointer}
+.lock-toggle[aria-pressed="true"],.inline-lock[aria-pressed="true"]{background:#fb443b;color:#fff;border-color:#fb443b}
+.pip-button{width:auto;height:auto;padding:10px 13px;font:600 12px 'DM Sans',sans-serif;white-space:nowrap}
+.inline-lock{position:absolute;top:8px;left:44px;width:30px;height:30px;border:0;border-radius:50%;background:#000a;color:#fff;font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s;-webkit-app-region:no-drag;app-region:no-drag}
+.inline-player:hover .inline-lock,.inline-lock:focus-visible{opacity:.85}
