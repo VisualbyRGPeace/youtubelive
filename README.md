@@ -24,8 +24,13 @@ Trình phát gọn nhẹ bằng tiếng Việt. Dán link video để mở playe
 
 ## YouTube Shorts (lướt gọn)
 
-- Dán link Shorts như `https://www.youtube.com/shorts/ID`: video mở trong cửa sổ nổi **dọc** (270×480), luôn nằm trên cùng, có thanh **Độ trong suốt** và **Thu nhỏ màn hình**.
-- Dán **nhiều link** cùng lúc (mỗi link một dòng hoặc cách nhau bằng dấu cách) để tạo hàng đợi: clip tự chuyển khi hết, hoặc dùng nút trước/sau trên trang chính. Tiêu đề hiện vị trí dạng `2/5`.
-- Playlist Shorts (`youtube.com/playlist?list=...`) cũng dùng được với nút trước/sau.
-- YouTube không cho nhúng bảng tin Shorts đề xuất nên cần tự dán link hoặc dùng playlist.
-- Thư mục `tiktok-overlay-extension` không còn cần cho Shorts; link video TikTok nhúng vẫn dùng được như trước.
+**Lướt theo từ khóa (cần API key, miễn phí):**
+1. Vào Google Cloud Console, tạo project, bật **YouTube Data API v3**, rồi tạo **API key** (nên đặt giới hạn HTTP referrer theo tên miền GitHub Pages của bạn).
+2. Mở mục *Khóa YouTube API* trên Gọn, dán key (chỉ lưu trong trình duyệt của bạn).
+3. Nhập từ khóa (vd: `mèo`, `nhạc`) rồi bấm **Lướt Shorts**. App tìm clip ngắn (≤ 3 phút), mở cửa sổ nổi dọc luôn nằm trên cùng, và nạp thêm khi gần hết.
+4. Lướt bằng **bánh xe chuột / vuốt / phím ↑ ↓** ở mép phải cửa sổ nổi, hoặc nút ▲ ▼ hiện khi rê chuột, hoặc nút trước/sau trên trang chính. Clip tự chuyển khi hết.
+5. Hạn mức miễn phí khoảng 10.000 đơn vị/ngày; mỗi lần tìm tốn khoảng 100, nên dùng được vài chục lượt nạp mỗi ngày.
+
+**Dán link:** link `youtube.com/shorts/ID` mở cửa sổ nổi dọc (270×480); dán nhiều link (mỗi link một dòng) để tạo hàng đợi; playlist cũng dùng được với nút trước/sau.
+
+YouTube không cho nhúng bảng tin Shorts đề xuất của chính nó, nên app lấy clip qua tìm kiếm theo từ khóa. Thư mục `tiktok-overlay-extension` không còn cần thiết.

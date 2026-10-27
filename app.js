@@ -27,7 +27,12 @@ const scaleSlider=document.querySelector('#scale-slider');
 const scaleValue=document.querySelector('#scale-value');
 const inlinePlayer=document.querySelector('#inline-player');
 const inlineFrame=document.querySelector('#inline-frame');
-let queue=[],queueIndex=0,lastAdvance=0;
+let queue=[],queueIndex=0,lastAdvance=0,pipNav=null;
+let feedState={query:'',token:'',loading:false,seen:new Set()};
+const feedForm=document.querySelector('#feed-form');
+const feedQuery=document.querySelector('#feed-query');
+const apiKeyInput=document.querySelector('#api-key');
+const apiKeyBox=document.querySelector('#api-key-box');
 const appMode=window.matchMedia('(display-mode: window-controls-overlay), (display-mode: standalone)').matches;
 let activeVideo=null,pipWindow=null,pipFrame=null,inlineActive=false,playerLocked=false,isPlaying=true,isSeeking=false,videoDuration=0;
 let seekHoldUntil=0,previewTimer=0,pendingPreview=null,lastSid='',lastSeq=0,lastTimeText='',lastDurationText='';
@@ -222,6 +227,7 @@ function stepQueue(direction){
   if(queue.length<2)return;
   queueIndex=(queueIndex+direction+queue.length)%queue.length;
   lastAdvance=performance.now();
+  if(feedState.query&&feedState.token&&!feedState.loading&&queueIndex>=queue.length-4)loadMoreFeed();
   beginVideo(queue[queueIndex]);
 }
 function getPreferredPlaybackRate(){try{const rate=Number(localStorage.getItem('gon-youtube-playback-rate'));return Number.isFinite(rate)&&rate>0?rate:1;}catch{return 1;}}
@@ -289,6 +295,82 @@ function attachPipMessages(){
   });
 }
 
+/* ---------- Lướt Shorts theo từ khóa (YouTube Data API) ---------- */
+function makeShort(id){return {platform:'youtube',id,list:'',embedUrl:new URL('/embed/'+id,'https://www.youtube.com'),isShort:true};}
+function parseIsoDuration(text){
+  const m=/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(text||'');
+  if(!m)return Infinity;
+  return (Number(m[1])||0)*3600+(Number(m[2])||0)*60+(Number(m[3])||0);
+}
+async function callYouTube(path,params){
+  const url=new URL('https://www.googleapis.com/youtube/v3/'+path);
+  url.search=new URLSearchParams(params).toString();
+  const response=await fetch(url);
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data?.error?.message||('Lỗi '+response.status));
+  return data;
+}
+async function fetchFeedPage(){
+  const key=apiKeyInput.value.trim();
+  if(!key)throw new Error('Chưa có API key');
+  const params={part:'snippet',type:'video',videoDuration:'short',videoEmbeddable:'true',maxResults:'25',q:feedState.query+' #shorts',key};
+  if(feedState.token)params.pageToken=feedState.token;
+  const found=await callYouTube('search',params);
+  feedState.token=found.nextPageToken||'';
+  const ids=(found.items||[]).map(item=>item.id?.videoId).filter(id=>id&&!feedState.seen.has(id));
+  if(!ids.length)return [];
+  const details=await callYouTube('videos',{part:'contentDetails',id:ids.join(','),key});
+  const ok=new Set((details.items||[]).filter(item=>parseIsoDuration(item.contentDetails?.duration)<=180).map(item=>item.id));
+  return ids.filter(id=>ok.has(id)).map(id=>{feedState.seen.add(id);return makeShort(id);});
+}
+async function loadMoreFeed(){
+  feedState.loading=true;
+  try{queue.push(...await fetchFeedPage());}catch{}
+  finally{feedState.loading=false;}
+}
+async function startFeed(query){
+  if(!query)return;
+  if(!apiKeyInput.value.trim()){
+    setText(statusText,'Cần dán API key YouTube ở mục bên dưới (chỉ làm một lần).');
+    apiKeyBox.open=true;apiKeyInput.focus();return;
+  }
+  feedState={query,token:'',loading:true,seen:new Set()};
+  queue=[];queueIndex=0;
+  setText(statusText,'Đang tải Shorts…');
+  // mở cửa sổ nổi ngay trong lúc bấm (cần thao tác người dùng), rồi mới tải danh sách
+  if(!appMode&&'documentPictureInPicture'in window){
+    welcome.hidden=true;playerView.hidden=false;
+    activeVideo={platform:'youtube',id:'',list:'',isShort:true,loading:true};
+    await openPictureInPicture();
+  }
+  try{
+    let list=await fetchFeedPage();
+    if(!list.length&&feedState.token)list=await fetchFeedPage();
+    if(!list.length){setText(statusText,'Không tìm thấy Shorts cho từ khóa này.');pipWindow?.close();welcome.hidden=false;playerView.hidden=true;return;}
+    queue=list;queueIndex=0;beginVideo(queue[0]);
+  }catch(error){
+    setText(statusText,'Không tải được: '+error.message);pipWindow?.close();welcome.hidden=false;playerView.hidden=true;
+  }finally{feedState.loading=false;}
+}
+function buildPipNav(win){
+  const doc=win.document;
+  const edge=doc.createElement('div');edge.className='gon-edge';
+  edge.innerHTML='<button type="button" data-d="-1" aria-label="Clip trước" title="Clip trước">▲</button><button type="button" data-d="1" aria-label="Clip tiếp theo" title="Clip tiếp theo">▼</button>';
+  edge.addEventListener('click',event=>{const d=Number(event.target.dataset?.d);if(d)stepQueue(d);});
+  let lastWheel=0,startY=null;
+  edge.addEventListener('wheel',event=>{event.preventDefault();const now=performance.now();if(now-lastWheel<700)return;lastWheel=now;stepQueue(event.deltaY>0?1:-1);},{passive:false});
+  edge.addEventListener('pointerdown',event=>{startY=event.clientY;});
+  edge.addEventListener('pointerup',event=>{if(startY===null)return;const dy=event.clientY-startY;startY=null;if(Math.abs(dy)>40)stepQueue(dy<0?1:-1);});
+  doc.addEventListener('keydown',event=>{
+    if(event.key==='ArrowDown'||event.key==='PageDown')stepQueue(1);
+    else if(event.key==='ArrowUp'||event.key==='PageUp')stepQueue(-1);
+  });
+  return edge;
+}
+try{apiKeyInput.value=localStorage.getItem('gon-yt-api-key')||'';}catch{}
+apiKeyInput.addEventListener('change',()=>{try{localStorage.setItem('gon-yt-api-key',apiKeyInput.value.trim());}catch{}});
+feedForm.addEventListener('submit',event=>{event.preventDefault();startFeed(feedQuery.value.trim());});
+
 /* ---------- Cửa sổ nổi ---------- */
 async function openPictureInPicture(){
   if(!activeVideo)return;
@@ -301,22 +383,24 @@ async function openPictureInPicture(){
       pipWindow=await window.documentPictureInPicture.requestWindow({width:activeVideo.isShort?270:activeVideo.platform==='tiktok'?240:activeVideo.platform==='tiktok-profile'?320:activeVideo.platform==='tiktok-home'?360:360,height:activeVideo.isShort?480:activeVideo.platform==='tiktok'?426:activeVideo.platform==='tiktok-profile'?560:activeVideo.platform==='tiktok-home'?640:220,disallowReturnToOpener:true});
       pipWindow.document.title='Video — Gọn';
       const style=pipWindow.document.createElement('style');
-      style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}';
+      style.textContent='html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100vw;height:100vh;border:0}body{color:#aaa;font:13px system-ui,sans-serif;display:grid;place-items:center;text-align:center}.gon-edge{position:fixed;right:0;top:0;bottom:0;width:38px;z-index:5;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;touch-action:none}.gon-edge button{width:30px;height:30px;border:0;border-radius:50%;background:#000a;color:#fff;font-size:12px;cursor:pointer;opacity:0;transition:opacity .2s}body:hover .gon-edge button{opacity:.85}';
       pipWindow.document.head.append(style);
+      pipNav=buildPipNav(pipWindow);
       attachPipMessages();
       pipWindow.addEventListener('pagehide',()=>{
-        pipWindow=null;pipFrame=null;playerLocked=false;updateLockButtons();
+        pipWindow=null;pipFrame=null;pipNav=null;playerLocked=false;updateLockButtons();
         pipStatus.textContent='Cửa sổ nổi đã đóng. Dán link khác hoặc mở lại video.';
         if('mediaSession'in navigator)navigator.mediaSession.playbackState='paused';
       });
     }
+    if(activeVideo.loading){pipWindow.document.body.replaceChildren('Đang tải Shorts…',...(pipNav?[pipNav]:[]));return;}
     pipFrame=pipWindow.document.createElement('iframe');
     pipFrame.title=(activeVideo.platform.startsWith('tiktok')?'TikTok':'YouTube')+' video';
     pipFrame.style.pointerEvents=playerLocked?'none':'';
     pipFrame.referrerPolicy='strict-origin-when-cross-origin';
     pipFrame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture; web-share';
     pipFrame.src=makePlayerUrl(activeVideo);
-    pipWindow.document.body.replaceChildren(pipFrame);
+    pipWindow.document.body.replaceChildren(pipFrame,...(pipNav?[pipNav]:[]));
     applyTransparency(transparencySlider.value);
     applyScale();
     pipStatus.textContent=activeVideo.platform==='tiktok-home'?'Đang tải bảng tin TikTok. Nếu cửa sổ trống hoặc báo từ chối kết nối, hãy cài/tải lại tiện ích Gọn (thư mục tiktok-overlay-extension) hoặc dùng nút TikTok popup.':activeVideo.platform==='tiktok-profile'?'Hồ sơ TikTok đã mở. Cuộn ngang qua các video của creator.':activeVideo.platform==='tiktok'?'TikTok đang phát trong cửa sổ nổi. Video liên quan có thể xuất hiện khi clip kết thúc.':activeVideo.list?'Video tự phát. Các nút điều khiển nằm trên trang chính.':'Video tự phát. Muốn chuyển bài, hãy mở một playlist.';
@@ -380,6 +464,7 @@ inlineLock.addEventListener('click',()=>setPlayerLocked(!playerLocked));
 
 /* ---------- Bắt đầu / dừng ---------- */
 function startVideo(value){
+  feedState={query:'',token:'',loading:false,seen:new Set()};
   const many=parseVideoList(value);
   if(many.length>1){queue=many;queueIndex=0;beginVideo(queue[0]);return;}
   queue=[];queueIndex=0;

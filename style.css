@@ -170,3 +170,9 @@ input[type=range]:disabled::-webkit-slider-thumb{transform:none}
 @media(max-width:600px){.youtube-options{align-items:flex-start;flex-direction:column}}
 
 .scale-control{margin-top:10px}
+
+.feed-form{margin-top:10px}
+.api-key{margin-top:10px;color:var(--muted);font-size:12px}
+.api-key summary{cursor:pointer;width:fit-content}
+.api-key input{display:block;width:100%;margin-top:8px;padding:11px 12px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:#f5f2eb;font:13px 'DM Sans',sans-serif}
+.api-key p{margin:8px 2px 0;color:var(--dim);font-size:11px;line-height:1.5}
