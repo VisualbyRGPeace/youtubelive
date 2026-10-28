@@ -143,10 +143,25 @@ body.locked #youtube-player iframe{pointer-events:none}
     else if(['playVideo','pauseVideo','stopVideo','nextVideo','previousVideo','mute','unMute'].includes(func)&&typeof player[func]==='function')player[func]();
     sendState();
   }
+  function applyCaptionsOff(){
+    if(!player||!ready)return;
+    for(const mod of ['captions','cc']){try{player.unloadModule(mod);}catch{}}
+  }
+  function enforceCaptionsOff(){
+    if(captionsEnabled||!player||!ready)return;
+    try{
+      const mods=player.getOptions()||[];
+      if(mods.includes('captions')||mods.includes('cc'))applyCaptionsOff();
+    }catch{}
+  }
   function setCaptionsEnabled(value){
     const enabled=Boolean(value);
     if(enabled===captionsEnabled){sendState();return;}
     if(!ready){queued.push(['setCaptions',[enabled]]);return;}
+    if(!enabled){
+      // Tắt: gỡ module phụ đề ngay trên player đang chạy, không tải lại video
+      captionsEnabled=false;applyCaptionsOff();sendState({ready:true});return;
+    }
     let state={currentTime:0,playing:true,volume:80,videoId:currentVideoId,playlistIndex:-1};
     try{
       state.currentTime=player.getCurrentTime()||0;
@@ -186,10 +201,11 @@ body.locked #youtube-player iframe{pointer-events:none}
         const captionCommands=pending.filter(([func])=>func==='setCaptions');
         const otherCommands=pending.filter(([func])=>func!=='setCaptions');
         if(captionCommands.length){
-          queued.push(...otherCommands);
           const desired=Boolean(captionCommands[captionCommands.length-1][1][0]);
-          if(desired!==captionsEnabled){setCaptionsEnabled(desired);return;}
+          if(desired&&!captionsEnabled){queued.push(...otherCommands);setCaptionsEnabled(true);return;}
+          if(!desired&&captionsEnabled)setCaptionsEnabled(false);
         }
+        if(!captionsEnabled)applyCaptionsOff();
         for(const [func,args] of otherCommands)applyCommand(func,args);
         player.setPlaybackRate(preferredPlaybackRate);
         if(restoreState){
@@ -199,7 +215,9 @@ body.locked #youtube-player iframe{pointer-events:none}
         sendState({ready:true});
         timer=setInterval(()=>sendState(),250);
       },
+      onApiChange(){enforceCaptionsOff();},
       onStateChange(event){
+        if(event.data===1)enforceCaptionsOff();
         sendState({ready:true});
         if(event.data===1&&Math.abs(player.getPlaybackRate()-preferredPlaybackRate)>0.01)setTimeout(()=>{if(ready){player.setPlaybackRate(preferredPlaybackRate);sendState({ready:true});}},180);
       },

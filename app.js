@@ -13,6 +13,8 @@ const speedControl=document.querySelector('#speed-control');
 const speedSelect=document.querySelector('#speed-select');
 const youtubeOptions=document.querySelector('#youtube-options');
 const captionsToggle=document.querySelector('#captions-toggle');
+const captionsState=document.querySelector('#captions-state');
+function updateCaptionsLabel(){if(captionsState)captionsState.textContent=captionsToggle.checked?'Bật':'Tắt';}
 const volumeIcon=document.querySelector('#volume-icon');
 const seekSlider=document.querySelector('#seek-slider');
 const currentTimeLabel=document.querySelector('#current-time');
@@ -117,6 +119,7 @@ transparencySlider.addEventListener('change',()=>{try{localStorage.setItem('gon-
 applyTransparency(transparencySlider.value);
 updateLockButtons();updatePlayButton();updateVolumeIcon();setFill(seekSlider);
 try{const savedCaptions=localStorage.getItem('gon-youtube-captions-enabled');if(savedCaptions!==null)captionsToggle.checked=savedCaptions==='1';}catch{}
+updateCaptionsLabel();
 
 function openTikTokBrowseWindow(){
   const popup=window.open('https://www.tiktok.com/','_blank','popup=yes,width=420,height=760,resizable=yes,scrollbars=yes,noreferrer');
@@ -301,6 +304,7 @@ speedSelect.addEventListener('change',()=>{
   sendPlayerCommand('setPlaybackRate',[rate]);
 });
 captionsToggle.addEventListener('change',()=>{
+  updateCaptionsLabel();
   try{localStorage.setItem('gon-youtube-captions-enabled',captionsToggle.checked?'1':'0');}catch{}
   sendPlayerCommand('setCaptions',[captionsToggle.checked]);
 });

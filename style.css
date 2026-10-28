@@ -167,4 +167,6 @@ input[type=range]:disabled::-webkit-slider-thumb{transform:none}
 .youtube-options{width:min(100%,460px);margin:10px auto 0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#ffffff06}
 .caption-toggle{display:flex;align-items:center;gap:8px;color:#d8d5cd;font-size:12px;cursor:pointer}
 .caption-toggle input{accent-color:var(--accent);width:15px;height:15px}
+.caption-state{font-style:normal;font-weight:700;color:var(--accent);min-width:24px}
+.caption-toggle input:not(:checked)~.caption-state{color:#8b8880}
 @media(max-width:600px){.youtube-options{align-items:flex-start;flex-direction:column}}
