@@ -356,7 +356,7 @@ function startVideo(value){
   const isTikTokProfile=video.platform==='tiktok-profile';
   document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list&&!videoQueue.length;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
@@ -410,6 +410,7 @@ function queueVideoLabel(video){
 }
 function renderVideoQueue(){
   queueCount.textContent=String(videoQueue.length);
+  nextButton.disabled=!activeVideo?.list&&!videoQueue.length;
   queueList.replaceChildren(...videoQueue.map((item,index)=>{
     const row=document.createElement('li');
     const label=document.createElement('span');label.className='queue-item-label';label.textContent=queueVideoLabel(item.video);
