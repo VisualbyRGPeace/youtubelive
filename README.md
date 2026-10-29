@@ -7,7 +7,8 @@ Trình phát gọn nhẹ bằng tiếng Việt. Dán link video để mở playe
 1. Mở GitHub Pages bằng Chrome hoặc Edge trên máy tính.
 2. Dán link YouTube/mã nhúng, link video TikTok đầy đủ như `https://www.tiktok.com/@creator/video/1234567890`, hoặc link hồ sơ như `https://www.tiktok.com/@creator`.
 3. App mở video TikTok trong cửa sổ dọc nhỏ; link hồ sơ mở thẻ video của creator để cuộn ngang. Video YouTube mở trong cửa sổ ngang.
-4. Dùng điều khiển trên trang chính để phát/tạm dừng, tua, chỉnh âm lượng và tốc độ phát, khóa thao tác hoặc chuyển bài trong playlist YouTube.
+4. Dán thêm link vào mục Hàng chờ khi video đang phát. Các link sẽ tự phát lần lượt; bạn có thể xóa từng link hoặc xóa cả hàng chờ.
+5. Dùng điều khiển trên trang chính để phát/tạm dừng, tua, chỉnh âm lượng và tốc độ phát, khóa thao tác hoặc chuyển bài trong playlist YouTube.
 5. Dùng thanh trượt để chỉnh độ trong suốt.
 
 ## Ghi chú
