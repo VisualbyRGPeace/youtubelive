@@ -481,6 +481,7 @@ receivePlayerState=function(event){
   if(data.state===1&&queueAdvanceTimer){clearTimeout(queueAdvanceTimer);queueAdvanceTimer=0;}
   if(data.state===0&&videoQueue.length){
     const sid=data.sid||'';
+    if(queueAdvanceTimer&&queueAdvanceSid===sid)return;
     if(queueAdvanceTimer)clearTimeout(queueAdvanceTimer);
     queueAdvanceSid=sid;
     queueAdvanceTimer=setTimeout(()=>{
