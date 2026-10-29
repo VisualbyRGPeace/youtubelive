@@ -400,6 +400,7 @@ const queueStatus=document.querySelector('#queue-status');
 const clearQueueButton=document.querySelector('#clear-queue');
 const inlineQueueButton=document.querySelector('#inline-queue');
 let videoQueue=[];
+let appModeQueueOpen=false;
 let queueAdvanceTimer=0;
 let queueAdvanceSid='';
 function queueVideoLabel(video){
@@ -451,13 +452,17 @@ clearQueueButton.addEventListener('click',()=>{
 });
 inlineQueueButton.hidden=!appMode;
 inlineQueueButton.addEventListener('click',()=>{
-  queuePanel.hidden=!queuePanel.hidden;
-  queuePanel.classList.toggle('queue-overlay',!queuePanel.hidden&&appMode);
+  appModeQueueOpen=!appModeQueueOpen;
+  queuePanel.hidden=!appModeQueueOpen;
+  queuePanel.classList.toggle('queue-overlay',appModeQueueOpen&&appMode);
   if(!queuePanel.hidden)queueUrl.focus();
 });
 const startVideoWithQueue=startVideo;
 startVideo=function(value){
-  if(getVideo(value))queuePanel.hidden=false;
+  if(getVideo(value)){
+    if(appMode){queuePanel.hidden=!appModeQueueOpen;queuePanel.classList.toggle('queue-overlay',appModeQueueOpen);}
+    else queuePanel.hidden=false;
+  }
   startVideoWithQueue(value);
 };
 document.querySelector('#back-button').addEventListener('click',()=>{queuePanel.hidden=true;});
@@ -483,3 +488,5 @@ receivePlayerState=function(event){
     },1400);
   }
 };
+
+document.querySelector('#inline-back').addEventListener('click',()=>{queuePanel.hidden=true;queuePanel.classList.remove('queue-overlay');appModeQueueOpen=false;});
