@@ -170,3 +170,25 @@ input[type=range]:disabled::-webkit-slider-thumb{transform:none}
 .caption-state{font-style:normal;font-weight:700;color:var(--accent);min-width:24px}
 .caption-toggle input:not(:checked)~.caption-state{color:#8b8880}
 @media(max-width:600px){.youtube-options{align-items:flex-start;flex-direction:column}}
+
+
+/* Hàng chờ */
+.queue-panel{width:min(100%,460px);margin:0 auto 14px;padding:15px 16px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#ffffff0c,#ffffff05);box-shadow:0 12px 34px #0003}
+.queue-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.queue-heading h2{margin:0;font:700 14px Manrope,sans-serif;color:#eeeae1}
+.queue-heading h2 span{display:inline-grid;place-items:center;min-width:21px;height:21px;margin-left:4px;padding:0 6px;border-radius:99px;background:var(--accent-soft);color:#ff766d;font:700 11px 'DM Sans',sans-serif}
+.queue-clear,.queue-remove{border:0;background:transparent;color:#aaa79f;font:600 11px 'DM Sans',sans-serif;cursor:pointer}
+.queue-clear:hover,.queue-remove:hover{color:#fff}
+.queue-form{display:flex;gap:7px;padding:5px;border:1px solid var(--line-strong);border-radius:11px;background:#0002}
+.queue-form input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--text);padding:8px;font:12px 'DM Sans',sans-serif}
+.queue-form input::placeholder{color:#73726b}
+.queue-form button{border:0;border-radius:8px;background:var(--cream);color:#141411;padding:0 13px;font:700 11px 'DM Sans',sans-serif}
+.queue-status{margin:8px 2px 0;color:var(--dim);font-size:10.5px;line-height:1.5}
+.queue-list{display:grid;gap:6px;max-height:140px;overflow:auto;margin:9px 0 0;padding:0;list-style:none}
+.queue-list:empty{display:none}
+.queue-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:#ffffff05;color:#d9d6ce;font-size:11px}
+.queue-item-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue-remove{flex:none}
+.inline-queue{position:absolute;top:8px;left:80px;display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:50%;background:#000b;color:#fff;font-size:16px;opacity:.9;-webkit-app-region:no-drag;app-region:no-drag}
+.inline-queue:hover{background:#000f}
+.queue-panel.queue-overlay{position:fixed;z-index:20;top:50px;left:50%;width:min(calc(100% - 28px),460px);max-height:calc(100vh - 65px);overflow:auto;margin:0;transform:translateX(-50%);background:#171715f5;backdrop-filter:blur(14px)}
