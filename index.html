@@ -48,8 +48,14 @@
 <button id="lock-toggle" class="lock-toggle" type="button" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><span id="lock-label">Khóa thao tác trong cửa sổ nổi</span></button>
 <p id="pip-status" class="player-note" aria-live="polite">Video tự phát trong cửa sổ nổi; dùng các nút điều khiển tại đây.</p>
 </section>
+<div id="queue-panel" class="queue-panel" aria-labelledby="queue-title" hidden>
+  <div class="queue-heading"><h2 id="queue-title">Hàng chờ <span id="queue-count">0</span></h2><button id="clear-queue" type="button" class="queue-clear">Xóa hết</button></div>
+  <form id="queue-form" class="queue-form"><label class="sr-only" for="queue-url">Dán link sẽ phát tiếp theo</label><input id="queue-url" type="text" placeholder="Dán link để phát tiếp theo…" autocomplete="url"><button type="submit">Thêm</button></form>
+  <p id="queue-status" class="queue-status" aria-live="polite">Link được thêm sẽ phát lần lượt sau video hiện tại.</p>
+  <ol id="queue-list" class="queue-list"></ol>
+</div>
 <footer><span>Video phát từ nền tảng gốc</span><span>YouTube · TikTok</span></footer></main>
 
-<div id="inline-player" class="inline-player" hidden><div class="drag-strip"><button id="inline-back" class="inline-back" aria-label="Chọn video khác" title="Chọn video khác"><svg class="icon"><use href="#i-back"/></svg></button><button id="inline-lock" class="inline-lock" aria-label="Khóa thao tác" title="Khóa thao tác" aria-pressed="false"><svg class="icon"><use href="#i-lock"/></svg></button></div><iframe id="inline-frame" title="YouTube video" allow="autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<div id="inline-player" class="inline-player" hidden><div class="drag-strip"><button id="inline-queue" class="inline-queue" type="button" aria-label="Mở hàng chờ" title="Mở hàng chờ" hidden>☰</button><button id="inline-back" class="inline-back" aria-label="Chọn video khác" title="Chọn video khác"><svg class="icon"><use href="#i-back"/></svg></button><button id="inline-lock" class="inline-lock" aria-label="Khóa thao tác" title="Khóa thao tác" aria-pressed="false"><svg class="icon"><use href="#i-lock"/></svg></button></div><iframe id="inline-frame" title="YouTube video" allow="autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <script src="app.js"></script>
 </body></html>

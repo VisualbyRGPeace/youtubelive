@@ -296,7 +296,7 @@ if(!('documentPictureInPicture'in window))pipButton.title='Cửa sổ nổi cầ
 pipButton.addEventListener('click',openPictureInPicture);
 playToggle.addEventListener('click',()=>setPlaying(!isPlaying));
 previousButton.addEventListener('click',()=>sendPlayerCommand('previousVideo'));
-nextButton.addEventListener('click',()=>sendPlayerCommand('nextVideo'));
+nextButton.addEventListener('click',()=>videoQueue.length?playNextQueuedVideo():sendPlayerCommand('nextVideo'));
 volumeSlider.addEventListener('input',()=>{updateVolumeIcon();sendPlayerCommand('setVolume',[Number(volumeSlider.value)]);});
 speedSelect.addEventListener('change',()=>{
   const rate=Number(speedSelect.value)||1;
@@ -356,7 +356,7 @@ function startVideo(value){
   const isTikTokProfile=video.platform==='tiktok-profile';
   document.querySelector('#track-title').textContent=isTikTokProfile?'TikTok creator':video.platform==='tiktok'?'TikTok video':video.id?'YouTube video':'YouTube playlist';
   document.querySelector('#track-author').textContent=isTikTokProfile?'Cuộn video trong hồ sơ':video.platform==='tiktok'?'Cửa sổ nổi · TikTok':video.list?'Danh sách phát':'Cửa sổ nổi';
-  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
+  playerLocked=false;isPlaying=!isTikTokProfile;seekHoldUntil=0;updatePlayButton();updateTimeline(0,0);previousButton.disabled=!video.list;nextButton.disabled=!video.list&&!videoQueue.length;playToggle.disabled=isTikTokProfile;volumeSlider.disabled=isTikTokProfile;speedControl.hidden=video.platform!=='youtube';youtubeOptions.hidden=video.platform!=='youtube';speedSelect.disabled=false;updateVolumeIcon();updateLockButtons();welcome.hidden=true;
   if(appMode){startInline();return;}
   playerView.hidden=false;
   openPictureInPicture();
@@ -388,3 +388,107 @@ window.addEventListener('beforeinstallprompt',event=>{
   button.addEventListener('click',async()=>{event.prompt();await event.userChoice;},{once:true});
 });
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').then(registration=>registration.update()).catch(()=>{}));
+
+
+/* ---------- Hàng chờ video ---------- */
+const queuePanel=document.querySelector('#queue-panel');
+const queueForm=document.querySelector('#queue-form');
+const queueUrl=document.querySelector('#queue-url');
+const queueList=document.querySelector('#queue-list');
+const queueCount=document.querySelector('#queue-count');
+const queueStatus=document.querySelector('#queue-status');
+const clearQueueButton=document.querySelector('#clear-queue');
+const inlineQueueButton=document.querySelector('#inline-queue');
+let videoQueue=[];
+let appModeQueueOpen=false;
+let queueAdvanceTimer=0;
+let queueAdvanceSid='';
+function queueVideoLabel(video){
+  if(video.platform==='tiktok-profile')return 'TikTok · @'+video.username;
+  if(video.platform==='tiktok')return 'TikTok · '+video.id;
+  return (video.list?'YouTube playlist':'YouTube')+(video.id?' · '+video.id:'');
+}
+function renderVideoQueue(){
+  queueCount.textContent=String(videoQueue.length);
+  nextButton.disabled=!activeVideo?.list&&!videoQueue.length;
+  queueList.replaceChildren(...videoQueue.map((item,index)=>{
+    const row=document.createElement('li');
+    const label=document.createElement('span');label.className='queue-item-label';label.textContent=queueVideoLabel(item.video);
+    const remove=document.createElement('button');remove.type='button';remove.className='queue-remove';remove.textContent='Xóa';remove.setAttribute('aria-label','Xóa link '+(index+1)+' khỏi hàng chờ');
+    remove.addEventListener('click',()=>{videoQueue.splice(index,1);renderVideoQueue();});
+    row.append(label,remove);return row;
+  }));
+}
+function enqueueVideo(value){
+  const video=getVideo(value);
+  if(!video){queueStatus.textContent='Link chưa đúng định dạng. Dùng link YouTube hoặc TikTok đầy đủ.';return false;}
+  videoQueue.push({video,url:value.trim()});
+  renderVideoQueue();
+  queueStatus.textContent='Đã thêm vào hàng chờ · '+videoQueue.length+' link.';
+  return true;
+}
+function playNextQueuedVideo(){
+  if(queueAdvanceTimer){clearTimeout(queueAdvanceTimer);queueAdvanceTimer=0;}
+  const next=videoQueue.shift();
+  renderVideoQueue();
+  if(!next)return false;
+  queuePanel.hidden=false;
+  queueStatus.textContent=videoQueue.length?'Đang phát link kế tiếp. Còn '+videoQueue.length+' link trong hàng chờ.':'Đang phát link kế tiếp.';
+  startVideo(next.url);
+  return true;
+}
+queueForm.addEventListener('submit',event=>{
+  event.preventDefault();
+  if(enqueueVideo(queueUrl.value)){queueUrl.value='';queueUrl.focus();}
+});
+queueUrl.addEventListener('paste',event=>{
+  const text=event.clipboardData?.getData('text')?.trim()||'';
+  if(!text)return;
+  event.preventDefault();
+  queueUrl.value=text;
+  if(enqueueVideo(text))queueUrl.value='';
+});
+clearQueueButton.addEventListener('click',()=>{
+  videoQueue=[];renderVideoQueue();queueStatus.textContent='Đã xóa hàng chờ.';
+});
+inlineQueueButton.hidden=!appMode;
+inlineQueueButton.addEventListener('click',()=>{
+  appModeQueueOpen=!appModeQueueOpen;
+  queuePanel.hidden=!appModeQueueOpen;
+  queuePanel.classList.toggle('queue-overlay',appModeQueueOpen&&appMode);
+  if(!queuePanel.hidden)queueUrl.focus();
+});
+const startVideoWithQueue=startVideo;
+startVideo=function(value){
+  if(getVideo(value)){
+    if(appMode){queuePanel.hidden=!appModeQueueOpen;queuePanel.classList.toggle('queue-overlay',appModeQueueOpen);}
+    else queuePanel.hidden=false;
+  }
+  startVideoWithQueue(value);
+};
+document.querySelector('#back-button').addEventListener('click',()=>{queuePanel.hidden=true;});
+const stopInlineWithQueue=stopInline;
+stopInline=function(){
+  stopInlineWithQueue();
+  queuePanel.hidden=true;
+  queuePanel.classList.remove('queue-overlay');
+};
+const receivePlayerStateWithQueue=receivePlayerState;
+receivePlayerState=function(event){
+  receivePlayerStateWithQueue(event);
+  const data=event.data;
+  if(data?.type!=='gon-player-state')return;
+  if(data.state===1&&queueAdvanceTimer){clearTimeout(queueAdvanceTimer);queueAdvanceTimer=0;}
+  if(data.state===0&&videoQueue.length){
+    const sid=data.sid||'';
+    if(queueAdvanceTimer&&queueAdvanceSid===sid)return;
+    if(queueAdvanceTimer)clearTimeout(queueAdvanceTimer);
+    queueAdvanceSid=sid;
+    queueAdvanceTimer=setTimeout(()=>{
+      queueAdvanceTimer=0;
+      if(queueAdvanceSid===sid&&videoQueue.length)playNextQueuedVideo();
+    },1400);
+  }
+};
+
+document.querySelector('#inline-back').addEventListener('click',()=>{queuePanel.hidden=true;queuePanel.classList.remove('queue-overlay');appModeQueueOpen=false;});
